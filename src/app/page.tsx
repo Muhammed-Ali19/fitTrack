@@ -9,7 +9,10 @@
 //  - Validation: #4CAF50
 "use client";
 import React, { useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "next/link"; // Assurez-vous d'avoir installé next/link
+import Nav from "./components/Nav"; // <-- import du composant Nav
+import Footer from "./components/Footer"; // <-- import du composant Footer
+import "./globals.css"; // Assurez-vous d'avoir les styles globaux
 
 export default function FitTrackHome() {
   const [height, setHeight] = useState(0);
@@ -32,41 +35,17 @@ export default function FitTrackHome() {
     setBmi(Number(val.toFixed(1)));
   };
 
+
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#F5F5F5] text-[#333333]">
+    <div className="relative min-h-screen overflow-hidden bg-[#F5F5F5] font-sans text-[#333333]">
       {/* <AnimatedBackground /> */}
 
-      {/* NAVBAR */}
-      <header className="relative z-10">
-        <nav className="mx-auto mt-6 w-[90%] max-w-5xl rounded-2xl border border-black/5 bg-white/90 shadow-lg shadow-black/5 backdrop-blur">
-          <div className="flex items-center justify-between px-6 py-3">
-            <div className="flex items-center gap-3">
+      <Nav />
 
-
-              <div>
-                <Link href="/">
-                  <img
-                    src="/img/logo.png"
-                    alt="FitTrack Logo"
-                    style={{ width: "40px", height: "40px" }}
-                  />
-                </Link>
-              </div>
-
-
-            </div>
-
-            <ul className="flex items-center gap-6 text-sm font-medium">
-              <li><a href="profil" className="nav-link">Profil</a></li>
-              <li><a href="alimentation" className="nav-link">Alimentation</a></li>
-              <li><a href="seances" className="nav-link">Séances</a></li>
-            </ul>
-          </div>
-        </nav>
-      </header>
 
       {/* SECTION IMC */}
-      <main className="relative z-10 mx-auto grid w-[90%] max-w-5xl place-items-center py-16">
+      <main className="relative z-10 mx-auto grid w-[90%] max-w-5xl place-items-center py-16 bg-[#F5F5F5]">
         <div className="text-center">
           <h1 className="text-5xl font-extrabold tracking-tight text-[#39393A] sm:text-6xl">IMC</h1>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-[#333333]/80">
@@ -138,20 +117,7 @@ export default function FitTrackHome() {
         </form>
       </main>
 
-      <footer className="relative z-10 pb-8">
-
-      </footer>
-
-      <style>{`
-        .nav-link { color: #39393A; position: relative; }
-        .nav-link::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: transparent; transition: background 200ms ease; }
-        .nav-link:hover::after { background: #FCAB10; }
-
-        @keyframes floatBlob {
-          0%,100% { transform: translate(0,0) scale(1); }
-          50% { transform: translate(20px, -15px) scale(1.05); }
-        }
-      `}</style>
+      <Footer />
     </div >
   );
 }

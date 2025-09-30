@@ -1,0 +1,46 @@
+.nav-link {
+    color: #39393A;
+    position: relative;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: rebeccapurple;
+    margin: 0;
+    padding: 0;
+}
+
+main {
+    background-color: rebeccapurple;
+}
+
+.nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -6px;
+    height: 2px;
+    background: transparent;
+    transition: background 200ms ease;
+}
+
+.nav-link:hover::after {
+    background: rebeccapurple;
+}
+
+@keyframes floatBlob {
+
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    50% {
+        transform: translate(20px, -15px) scale(1.05);
+    }
+}
