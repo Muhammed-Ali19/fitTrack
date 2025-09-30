@@ -159,4 +159,6 @@ function AnimatedBackground() {
       <div className="absolute bottom-10 left-1/3 h-72 w-72 rounded-full bg-[#FCAB10]/20 blur-3xl animate-pulse" style={{ animation: "floatBlob 18s infinite alternate ease-in-out" }} />
     </div>
   );
+
+
 }
