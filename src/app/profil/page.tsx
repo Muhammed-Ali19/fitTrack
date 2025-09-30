@@ -113,8 +113,9 @@ export default function FitTrackHome() {
                         </div>
                     )}
                 </form>
+                <Footer />
             </main>
-            <Footer />
+
         </div >
 
     );
