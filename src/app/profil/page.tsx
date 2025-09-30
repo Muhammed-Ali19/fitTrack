@@ -1,5 +1,15 @@
+// FitTrack Home Page – React + Tailwind (single-file component)
+// Palette :
+//  - Primaire (orange): #FCAB10
+//  - Secondaire (noir): #39393A
+//  - Fond (blanc cassé): #F5F5F5
+//  - Texte principal: #333333
+//  - Texte secondaire: #F5F5F5
+//  - Erreur: #FF3D00
+//  - Validation: #4CAF50
 "use client";
 import React, { useMemo, useState } from "react";
+import Link from "next/link";
 
 export default function FitTrackHome() {
     const [height, setHeight] = useState(0);
@@ -17,37 +27,39 @@ export default function FitTrackHome() {
     const onCalc = (e: React.FormEvent) => {
         e.preventDefault();
         if (!height || !weight) return;
-        const h = Number(height) / 100; // cm -> m
+        const h = Number(height) / 100;
         const val = Number(weight) / (h * h);
         setBmi(Number(val.toFixed(1)));
     };
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-[#F5F5F5] text-[#333333]">
-            {/* Animated background blobs (subtil, non intrusif) */}
-            <BackgroundBlobs />
+            {/* <AnimatedBackground /> */}
 
             {/* NAVBAR */}
             <header className="relative z-10">
                 <nav className="mx-auto mt-6 w-[90%] max-w-5xl rounded-2xl border border-black/5 bg-white/90 shadow-lg shadow-black/5 backdrop-blur">
                     <div className="flex items-center justify-between px-6 py-3">
-                        {/* Logo + marque */}
                         <div className="flex items-center gap-3">
-                            <div className="grid h-10 w-10 place-items-center rounded-full bg-[#FCAB10] text-[#F5F5F5] shadow">
-                                {/* haltère en SVG */}
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                                    <path d="M4 14V10M8 16V8M16 16V8M20 14V10"/>
-                                    <rect x="9" y="10" width="6" height="4" rx="1"/>
-                                </svg>
+
+
+                            <div>
+                                <Link href="/">
+                                    <img
+                                        src="/img/logo.png"
+                                        alt="FitTrack Logo"
+                                        style={{ width: "40px", height: "40px" }}
+                                    />
+                                </Link>
                             </div>
-                            <span className="text-lg font-semibold tracking-tight text-[#39393A]">FitTrack</span>
+
+
                         </div>
 
-                        {/* Liens */}
                         <ul className="flex items-center gap-6 text-sm font-medium">
-                            <li><a href="#profil" className="nav-link">Profil</a></li>
-                            <li><a href="#alimentation" className="nav-link">Alimentation</a></li>
-                            <li><a href="#seances" className="nav-link">Séances</a></li>
+                            <li><a href="profil" className="nav-link">Profil</a></li>
+                            <li><a href="alimentation" className="nav-link">Alimentation</a></li>
+                            <li><a href="seances" className="nav-link">Séances</a></li>
                         </ul>
                     </div>
                 </nav>
@@ -56,9 +68,9 @@ export default function FitTrackHome() {
             {/* SECTION IMC */}
             <main className="relative z-10 mx-auto grid w-[90%] max-w-5xl place-items-center py-16">
                 <div className="text-center">
-                    <h1 className="text-5xl font-extrabold tracking-tight text-[#39393A] sm:text-6xl">IMC</h1>
+                    <h1 className="text-5xl font-extrabold tracking-tight text-[#39393A] sm:text-6xl">Page profil</h1>
                     <p className="mx-auto mt-3 max-w-2xl text-lg text-[#333333]/80">
-                        Entrez votre taille et votre poids pour calculer votre IMC.
+                        Page profil
                     </p>
                 </div>
 
@@ -68,13 +80,11 @@ export default function FitTrackHome() {
                             <label htmlFor="height" className="mb-1 block text-sm font-medium text-[#39393A]">Taille (cm)</label>
                             <input
                                 id="height"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
                                 type="number"
                                 placeholder="Ex: 175"
                                 value={height || ""}
                                 onChange={(e) => setHeight(Number(e.target.value))}
-                                className="h-12 w-full rounded-xl border border-black/10 bg-white px-4 text-base outline-none ring-0 transition focus:border-[#FCAB10] focus:shadow-[0_0_0_3px_rgba(252,171,16,0.25)]"
+                                className="h-12 w-full rounded-xl border border-black/10 bg-white px-4 text-base outline-none transition focus:border-[#FCAB10] focus:shadow-[0_0_0_3px_rgba(252,171,16,0.25)]"
                             />
                         </div>
 
@@ -82,13 +92,11 @@ export default function FitTrackHome() {
                             <label htmlFor="weight" className="mb-1 block text-sm font-medium text-[#39393A]">Poids (kg)</label>
                             <input
                                 id="weight"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
                                 type="number"
                                 placeholder="Ex: 70"
                                 value={weight || ""}
                                 onChange={(e) => setWeight(Number(e.target.value))}
-                                className="h-12 w-full rounded-xl border border-black/10 bg-white px-4 text-base outline-none ring-0 transition focus:border-[#FCAB10] focus:shadow-[0_0_0_3px_rgba(252,171,16,0.25)]"
+                                className="h-12 w-full rounded-xl border border-black/10 bg-white px-4 text-base outline-none transition focus:border-[#FCAB10] focus:shadow-[0_0_0_3px_rgba(252,171,16,0.25)]"
                             />
                         </div>
 
@@ -100,7 +108,6 @@ export default function FitTrackHome() {
                         </button>
                     </div>
 
-                    {/* Résultat */}
                     {bmi !== null && (
                         <div className="mt-5 rounded-xl border border-black/5 bg-[#F5F5F5] p-4">
                             <div className="flex items-baseline justify-between">
@@ -113,8 +120,6 @@ export default function FitTrackHome() {
                                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${category.color} bg-white border border-black/5`}>{category.label}</span>
                                 )}
                             </div>
-
-                            {/* Barre d'échelle simple */}
                             <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-black/10">
                                 <div
                                     className="h-full bg-[#FCAB10] transition-[width] duration-500"
@@ -133,39 +138,30 @@ export default function FitTrackHome() {
                 </form>
             </main>
 
-            {/* Footer minimal */}
             <footer className="relative z-10 pb-8">
-                <p className="mx-auto w-[90%] max-w-5xl text-xs text-[#333333]/60">
-                    © {new Date().getFullYear()} FitTrack. Interface d'accueil.
-                </p>
+
             </footer>
 
-            {/* Styles additionnels (animations + liens) */}
             <style>{`
         .nav-link { color: #39393A; position: relative; }
         .nav-link::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: transparent; transition: background 200ms ease; }
         .nav-link:hover::after { background: #FCAB10; }
 
-        @keyframes blob {
-          0%, 100% { transform: translate(0,0) scale(1); }
-          33% { transform: translate(20px,-10px) scale(1.05); }
-          66% { transform: translate(-10px,20px) scale(0.98); }
+        @keyframes floatBlob {
+          0%,100% { transform: translate(0,0) scale(1); }
+          50% { transform: translate(20px, -15px) scale(1.05); }
         }
       `}</style>
-        </div>
+        </div >
     );
 }
 
-function BackgroundBlobs() {
+function AnimatedBackground() {
     return (
-        <div aria-hidden className="pointer-events-none absolute inset-0">
-            {/* Motif doux en "nuages" + dégradés, respecte le fond #F5F5F5 */}
-            <div className="absolute -left-8 top-24 h-64 w-64 rounded-[40%] bg-[#FCAB10]/20 blur-3xl" style={{ animation: "blob 18s infinite ease-in-out" }} />
-            <div className="absolute right-0 top-0 h-72 w-72 rounded-[45%] bg-[#39393A]/10 blur-3xl" style={{ animation: "blob 22s infinite ease-in-out" }} />
-            <div className="absolute bottom-10 left-1/3 h-56 w-56 rounded-[45%] bg-[#FCAB10]/10 blur-3xl" style={{ animation: "blob 20s infinite ease-in-out" }} />
-            <div className="absolute bottom-[-2rem] right-16 h-64 w-64 rounded-[40%] bg-[#39393A]/10 blur-3xl" style={{ animation: "blob 24s infinite ease-in-out" }} />
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div className="absolute -top-20 -left-20 h-80 w-80 rounded-full bg-[#FCAB10]/30 blur-3xl animate-pulse" style={{ animation: "floatBlob 15s infinite alternate ease-in-out" }} />
+            <div className="absolute top-40 right-0 h-96 w-96 rounded-full bg-[#39393A]/20 blur-3xl animate-pulse" style={{ animation: "floatBlob 20s infinite alternate ease-in-out" }} />
+            <div className="absolute bottom-10 left-1/3 h-72 w-72 rounded-full bg-[#FCAB10]/20 blur-3xl animate-pulse" style={{ animation: "floatBlob 18s infinite alternate ease-in-out" }} />
         </div>
     );
 }
-
-
