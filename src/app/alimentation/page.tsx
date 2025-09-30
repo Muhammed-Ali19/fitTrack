@@ -60,11 +60,9 @@ export default function AlimentationPage() {
                             </ul>
                         )}
                     </section>
-
-
-
+                    <Footer />
                 </main>
-                <Footer />
+
             </div>
         </>
     );
