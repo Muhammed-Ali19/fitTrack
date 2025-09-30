@@ -25,11 +25,12 @@ const Nav = () => {
                             <Link href="/alimentation" className="nav-link">Alimentation</Link>
                         </li>
                         <li>
-                            <Link href="/seances" className="nav-link">Séances</Link>
+                            <Link href="/seances" className="nav-link bg-[#FCAB10">Séances</Link>
                         </li>
                     </ul>
                 </div>
             </nav>
+            <style>{`.nav-link {color: #39393A; position: relative; } .nav-link::after {content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: transparent; transition: background 200ms ease; } .nav-link:hover::after {background: #FCAB10; } @keyframes floatBlob {0%, 100% { transform: translate(0, 0) scale(1); } 50% {transform: translate(20px, -15px) scale(1.05); } }`}</style>
         </header>
     );
 };

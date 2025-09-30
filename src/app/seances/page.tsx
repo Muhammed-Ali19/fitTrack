@@ -13,7 +13,6 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
-import "../globals.css";
 
 export default function SeancesPage() {
     const [seances, setSeances] = useState<string[]>([]);
@@ -28,18 +27,21 @@ export default function SeancesPage() {
 
     return (
         <>
-            <Nav />
-            <main className="min-h-screen p-8 font-sans flex flex-col items-center">
-                {/* NAVBAR */}
+
+            <div className="relative min-h-screen overflow-hidden bg-[#F5F5F5] font-sans text-[#333333]">
+                <Nav />
+                <main className="min-h-screen p-8 font-sans bg[#F5FF5F5] flex flex-col items-center">
 
 
-                {/* Titre */}
-                <h1 className="text-4xl font-bold text-gray-800 my-6">Page séances</h1>
+                    {/* Titre */}
+                    <h1 className="text-4xl font-bold text-gray-800 my-6">Page séances</h1>
 
-                {/* Formulaire */}
-            </main>
+                    {/* Formulaire */}
+                </main>
 
-            <Footer />
+                <Footer />
+            </div>
+
         </>
 
     );

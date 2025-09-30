@@ -10,8 +10,9 @@
 
 
 "use client";
-import Nav from "../components/Nav";
 import { useState } from "react";
+import Nav from "../components/Nav";
+import Footer from "../components/Footer";
 
 export default function AlimentationPage() {
     const [repas, setRepas] = useState<string[]>([]);
@@ -26,50 +27,45 @@ export default function AlimentationPage() {
 
     return (
         <>
-            <Nav />
 
-            <main className="min-h-screen bg-gray-50 flex flex-col items-center p-8 font-sans">
+            <div className="relative min-h-screen overflow-hidden bg-[#F5F5F5] font-sans text-[#333333]">
+                <Nav />
+                <main className="min-h-screen flex flex-col items-center p-8 font-sans ">
 
-                <h1 className="text-4xl font-bold mb-6 text-gray-800">Alimentation</h1>
+                    <h1 className="text-4xl font-bold mb-6 text-gray-800">Alimentation</h1>
 
-                <section className="bg-white p-6 rounded-lg shadow-md w-full max-w-md mb-8">
-                    <h2 className="text-2xl font-semibold mb-4">Ajouter un repas</h2>
-                    <form onSubmit={ajouterRepas} className="flex gap-3">
-                        <input
-                            type="text"
-                            placeholder="Nom du repas"
-                            value={nouveauRepas}
-                            onChange={(e) => setNouveauRepas(e.target.value)}
-                            className="border p-2 rounded flex-1 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                        />
-                        <button
-                            type="submit"
-                            className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 transition-colors"
-                        >
-                            Ajouter
-                        </button>
-                    </form>
+                    <section className="bg-white p-6 rounded-lg shadow-md w-full max-w-md mb-8 ">
+                        <h2 className="text-2xl font-semibold mb-4">Ajouter un repas</h2>
+                        <form onSubmit={ajouterRepas} className="flex gap-3">
+                            <input
+                                type="text"
+                                placeholder="Nom du repas"
+                                value={nouveauRepas}
+                                onChange={(e) => setNouveauRepas(e.target.value)}
+                                className="border p-2 rounded flex-1 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                            />
+                            <button
+                                type="submit"
+                                className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 transition-colors"
+                            >
+                                Ajouter
+                            </button>
+                        </form>
 
-                    {repas.length > 0 && (
-                        <ul className="mt-4 list-disc list-inside">
-                            {repas.map((r, idx) => (
-                                <li key={idx}>{r}</li>
-                            ))}
-                        </ul>
-                    )}
-                </section>
-                <style>{`
-        .nav-link { color: #39393A; position: relative; }
-        .nav-link::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: transparent; transition: background 200ms ease; }
-        .nav-link:hover::after { background: #FCAB10; }
+                        {repas.length > 0 && (
+                            <ul className="mt-4 list-disc list-inside">
+                                {repas.map((r, idx) => (
+                                    <li key={idx}>{r}</li>
+                                ))}
+                            </ul>
+                        )}
+                    </section>
 
-        @keyframes floatBlob {
-          0%,100% { transform: translate(0,0) scale(1); }
-          50% { transform: translate(20px, -15px) scale(1.05); }
-        }
-      `}</style>
-            </main>
+
+
+                </main>
+                <Footer />
+            </div>
         </>
-
     );
 }
