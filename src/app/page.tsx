@@ -9,6 +9,7 @@
 //  - Validation: #4CAF50
 "use client";
 import React, { useMemo, useState } from "react";
+import Link from "next/link";
 
 export default function FitTrackHome() {
   const [height, setHeight] = useState(0);
@@ -33,26 +34,32 @@ export default function FitTrackHome() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#F5F5F5] text-[#333333]">
-      <AnimatedBackground />
+      {/* <AnimatedBackground /> */}
 
       {/* NAVBAR */}
       <header className="relative z-10">
         <nav className="mx-auto mt-6 w-[90%] max-w-5xl rounded-2xl border border-black/5 bg-white/90 shadow-lg shadow-black/5 backdrop-blur">
           <div className="flex items-center justify-between px-6 py-3">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-full bg-[#FCAB10] text-[#F5F5F5] shadow">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M4 14V10M8 16V8M16 16V8M20 14V10" />
-                  <rect x="9" y="10" width="6" height="4" rx="1" />
-                </svg>
+
+
+              <div>
+                <Link href="/">
+                  <img
+                    src="/img/logo.png"
+                    alt="FitTrack Logo"
+                    style={{ width: "40px", height: "40px" }}
+                  />
+                </Link>
               </div>
-              <span className="text-lg font-semibold tracking-tight text-[#39393A]">FitTrack</span>
+
+
             </div>
 
             <ul className="flex items-center gap-6 text-sm font-medium">
-              <li><a href="#profil" className="nav-link">Profil</a></li>
-              <li><a href="#alimentation" className="nav-link">Alimentation</a></li>
-              <li><a href="#seances" className="nav-link">Séances</a></li>
+              <li><a href="profil" className="nav-link">Profil</a></li>
+              <li><a href="alimentation" className="nav-link">Alimentation</a></li>
+              <li><a href="seances" className="nav-link">Séances</a></li>
             </ul>
           </div>
         </nav>
@@ -132,9 +139,7 @@ export default function FitTrackHome() {
       </main>
 
       <footer className="relative z-10 pb-8">
-        <p className="mx-auto w-[90%] max-w-5xl text-xs text-[#333333]/60">
-          © {new Date().getFullYear()} FitTrack. Interface d'accueil.
-        </p>
+
       </footer>
 
       <style>{`
@@ -147,7 +152,7 @@ export default function FitTrackHome() {
           50% { transform: translate(20px, -15px) scale(1.05); }
         }
       `}</style>
-    </div>
+    </div >
   );
 }
 
