@@ -17,12 +17,52 @@ import Footer from "../components/Footer";
 export default function AlimentationPage() {
     const [repas, setRepas] = useState<string[]>([]);
     const [nouveauRepas, setNouveauRepas] = useState("");
+    const [query, setQuery] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [results, setResults] = useState<Array<{
+        name: string;
+        serving_size_g: number;
+        calories: number;
+        fat_total_g: number;
+        fat_saturated_g: number;
+        cholesterol_mg: number;
+        sodium_mg: number;
+        carbohydrates_total_g: number;
+        fiber_g: number;
+        sugar_g: number;
+        protein_g: number;
+    }>>([]);
 
     const ajouterRepas = (e: React.FormEvent) => {
         e.preventDefault();
         if (!nouveauRepas.trim()) return;
         setRepas([...repas, nouveauRepas]);
         setNouveauRepas("");
+    };
+
+    const rechercherNutrition = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!query.trim()) return;
+        setLoading(true);
+        setError(null);
+        setResults([]);
+        try {
+            const res = await fetch(`/api/nutrition?query=${encodeURIComponent(query)}`, {
+                method: "GET",
+                cache: "no-store",
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setError(data?.error || "Erreur lors de la récupération des données");
+            } else {
+                setResults(Array.isArray(data?.items) ? data.items : []);
+            }
+        } catch {
+            setError("Erreur réseau inattendue");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -61,7 +101,68 @@ export default function AlimentationPage() {
                         )}
                     </section>
 
+                    <section className="bg-white p-6 rounded-lg shadow-md w-full max-w-3xl">
+                        <h2 className="text-2xl font-semibold mb-4">Recherche nutritionnelle</h2>
+                        <form onSubmit={rechercherNutrition} className="flex gap-3 mb-4">
+                            <input
+                                type="text"
+                                placeholder="Ex: 1 pomme et 2 oeufs"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                className="border p-2 rounded flex-1 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                            />
+                            <button
+                                type="submit"
+                                className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 transition-colors disabled:opacity-60"
+                                disabled={loading}
+                            >
+                                {loading ? "Recherche..." : "Obtenir nutrition"}
+                            </button>
+                        </form>
 
+                        {error && (
+                            <div className="text-red-600 mb-3">{error}</div>
+                        )}
+
+                        {results.length > 0 && (
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full border text-sm">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="border px-2 py-1 text-left">Nom</th>
+                                            <th className="border px-2 py-1">Portion (g)</th>
+                                            <th className="border px-2 py-1">Calories</th>
+                                            <th className="border px-2 py-1">Lipides (g)</th>
+                                            <th className="border px-2 py-1">Saturés (g)</th>
+                                            <th className="border px-2 py-1">Cholest. (mg)</th>
+                                            <th className="border px-2 py-1">Sodium (mg)</th>
+                                            <th className="border px-2 py-1">Glucides (g)</th>
+                                            <th className="border px-2 py-1">Fibres (g)</th>
+                                            <th className="border px-2 py-1">Sucres (g)</th>
+                                            <th className="border px-2 py-1">Protéines (g)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {results.map((item, idx) => (
+                                            <tr key={`${item.name}-${idx}`} className="odd:bg-white even:bg-gray-50">
+                                                <td className="border px-2 py-1 text-left capitalize">{item.name}</td>
+                                                <td className="border px-2 py-1 text-right">{item.serving_size_g}</td>
+                                                <td className="border px-2 py-1 text-right">{item.calories}</td>
+                                                <td className="border px-2 py-1 text-right">{item.fat_total_g}</td>
+                                                <td className="border px-2 py-1 text-right">{item.fat_saturated_g}</td>
+                                                <td className="border px-2 py-1 text-right">{item.cholesterol_mg}</td>
+                                                <td className="border px-2 py-1 text-right">{item.sodium_mg}</td>
+                                                <td className="border px-2 py-1 text-right">{item.carbohydrates_total_g}</td>
+                                                <td className="border px-2 py-1 text-right">{item.fiber_g}</td>
+                                                <td className="border px-2 py-1 text-right">{item.sugar_g}</td>
+                                                <td className="border px-2 py-1 text-right">{item.protein_g}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </section>
 
                 </main>
                 <Footer />
