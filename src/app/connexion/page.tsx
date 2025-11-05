@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Nav from "../components/Nav";
 import { auth } from "@/firebaseClient";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { OAuthProvider, GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 
 export default function ConnexionPage() {
     const [email, setEmail] = useState("");
@@ -21,6 +21,38 @@ export default function ConnexionPage() {
             router.push("/profil");
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Impossible de se connecter.";
+            setError(message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogle = async () => {
+        setError(null);
+        setLoading(true);
+        try {
+            const provider = new GoogleAuthProvider();
+            await signInWithPopup(auth, provider);
+            router.push("/profil");
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Google: échec de connexion.";
+            setError(message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleApple = async () => {
+        setError(null);
+        setLoading(true);
+        try {
+            const provider = new OAuthProvider('apple.com');
+            provider.addScope('name');
+            provider.addScope('email');
+            await signInWithPopup(auth, provider);
+            router.push("/profil");
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Apple: échec de connexion.";
             setError(message);
         } finally {
             setLoading(false);
@@ -66,6 +98,14 @@ export default function ConnexionPage() {
                             <button type="submit" style={{ backgroundColor: "#FCAB10" }} className="mt-6 w-full rounded-md  px-4 py-2 text-white font-semibold hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
                                 {loading ? "Connexion..." : "Se connecter"}
                             </button>
+                            <div className="mt-4 grid grid-cols-1 gap-3">
+                                <button type="button" onClick={handleGoogle} className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    Continuer avec Google
+                                </button>
+                                <button type="button" onClick={handleApple} className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    Continuer avec Apple
+                                </button>
+                            </div>
                             <a href="/inscription">Vous n'avez pas de compte ? Inscrivez-vous</a>
                         </form>
                     </section>
