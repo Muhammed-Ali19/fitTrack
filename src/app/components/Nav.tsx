@@ -25,7 +25,10 @@ const Nav = () => {
                             <Link href="/alimentation" className="nav-link">Alimentation</Link>
                         </li>
                         <li>
-                            <Link href="/seances" className="nav-link bg-[#FCAB10">Séances</Link>
+                            <Link href="/programme" className="nav-link bg-[#FCAB10">Programme</Link>
+                        </li>
+                        <li>
+                            <Link href="/connexion" className="nav-link" >Connexion</Link >
                         </li>
                     </ul>
                 </div>
