@@ -1,22 +1,53 @@
 "use client";
 import React, { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Nav from "../components/Nav";
+import { auth, db } from "@/firebaseClient";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 
 export default function InscriptionPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState(""); // Nouvel état pour la confirmation du mot de passe
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [birthDate, setBirthDate] = useState("");
+    const [heightCm, setHeightCm] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (password !== confirmPassword) {
             alert("Les mots de passe ne correspondent pas !");
             return;
         }
-        // Logique d'inscription ici
-        console.log("Email:", email);
-        console.log("Password:", password);
+        setError(null);
+        setLoading(true);
+        try {
+            const parsedHeight = Number(heightCm);
+            if (!Number.isFinite(parsedHeight) || parsedHeight <= 0) {
+                throw new Error("Merci de saisir une taille valide.");
+            }
+            const credential = await createUserWithEmailAndPassword(auth, email, password);
+            const userDoc = doc(db, "users", credential.user.uid);
+            await setDoc(userDoc, {
+                firstName,
+                lastName,
+                email,
+                birthDate,
+                heightCm: parsedHeight,
+                createdAt: serverTimestamp(),
+            });
+            router.push("/profil");
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Une erreur est survenue.";
+            setError(message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -39,6 +70,60 @@ export default function InscriptionPage() {
                                 className="mb-4 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                                 required
                             />
+
+                            <label className="mb-2 font-medium text-gray-700" htmlFor="firstName">
+                                Prenom
+                            </label>
+                            <input
+                                type="text"
+                                id="firstName"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                className="mb-4 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                required
+                            />
+
+                            <label className="mb-2 font-medium text-gray-700" htmlFor="lastName">
+                                Nom
+                            </label>
+                            <input
+                                type="text"
+                                id="lastName"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                className="mb-4 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                required
+                            />
+
+                            <label className="mb-2 font-medium text-gray-700" htmlFor="birthDate">
+                                Date de naissance
+                            </label>
+                            <input
+                                type="date"
+                                id="birthDate"
+                                value={birthDate}
+                                onChange={(e) => setBirthDate(e.target.value)}
+                                className="mb-4 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                required
+                            />
+
+                            <label className="mb-2 font-medium text-gray-700" htmlFor="height">
+                                Taille (cm)
+                            </label>
+                            <input
+                                type="number"
+                                id="height"
+                                value={heightCm}
+                                onChange={(e) => setHeightCm(e.target.value)}
+                                className="mb-4 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                required
+                            />
+
+                            {error && (
+                                <p className="mb-4 rounded-md bg-red-100 px-4 py-2 text-sm text-red-700">
+                                    {error}
+                                </p>
+                            )}
 
                             <label className="mb-2 font-medium text-gray-700" htmlFor="password">
                                 Mot de passe
@@ -65,9 +150,9 @@ export default function InscriptionPage() {
                             />
 
                             <button type="submit" style={{ backgroundColor: "#FCAB10" }} className="mt-6 w-full rounded-md  px-4 py-2 text-white font-semibold hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
-                                S'inscrire
+                                {loading ? "Inscription en cours..." : "S'inscrire"}
                             </button>
-                            <a href="/connexion">Vous avez déjà un compte ? Connectez-vous</a>
+                            <a href="/connexion">Vous avez deja un compte ? Connectez-vous</a>
                         </form>
                     </section>
 
@@ -88,3 +173,4 @@ export default function InscriptionPage() {
 
     );
 }
+
