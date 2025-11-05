@@ -18,6 +18,13 @@ export default function FitTrackHome() {
   const [height, setHeight] = useState(0);
   const [weight, setWeight] = useState(0);
   const [bmi, setBmi] = useState<number | null>(null);
+  const [age, setAge] = useState(0);
+  const [sex, setSex] = useState<"homme" | "femme">("homme");
+  const [activity, setActivity] = useState(1.2);
+  const [waterL, setWaterL] = useState<number | null>(null);
+  const [bmr, setBmr] = useState<number | null>(null);
+  const [tdee, setTdee] = useState<number | null>(null);
+  const [bodyFat, setBodyFat] = useState<number | null>(null);
 
   const category = useMemo(() => {
     if (bmi == null) return null;
@@ -32,7 +39,27 @@ export default function FitTrackHome() {
     if (!height || !weight) return;
     const h = Number(height) / 100;
     const val = Number(weight) / (h * h);
-    setBmi(Number(val.toFixed(1)));
+    const bmiLocal = Number(val.toFixed(1));
+    setBmi(bmiLocal);
+
+    // Eau (L/jour) = poids * 0.03
+    const water = Number((Number(weight) * 0.03).toFixed(2));
+    setWaterL(water);
+
+    // BMR: Mifflin-St Jeor
+    const base = 10 * Number(weight) + 6.25 * Number(height) - 5 * Number(age);
+    const bmrLocal = sex === "homme" ? base + 5 : base - 161;
+    setBmr(Math.round(bmrLocal));
+
+    // TDEE
+    const tdeeLocal = bmrLocal * Number(activity || 1.2);
+    setTdee(Math.round(tdeeLocal));
+
+    // % Masse grasse (Deurenberg)
+    const bfLocal = sex === "homme"
+      ? 1.2 * bmiLocal + 0.23 * Number(age) - 16.2
+      : 1.2 * bmiLocal + 0.23 * Number(age) - 5.4;
+    setBodyFat(Number(bfLocal.toFixed(1)));
   };
 
 
@@ -79,6 +106,49 @@ export default function FitTrackHome() {
               />
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="age" className="mb-1 block text-sm font-medium text-[#39393A]">Âge (ans)</label>
+                <input
+                  id="age"
+                  type="number"
+                  placeholder="Ex: 25"
+                  value={age || ""}
+                  onChange={(e) => setAge(Number(e.target.value))}
+                  className="h-12 w-full rounded-xl border border-black/10 bg-white px-4 text-base outline-none transition focus:border-[#FCAB10] focus:shadow-[0_0_0_3px_rgba(252,171,16,0.25)]"
+                />
+              </div>
+              <div>
+                <span className="mb-1 block text-sm font-medium text-[#39393A]">Sexe</span>
+                <div className="flex gap-4 h-12 items-center">
+                  <label className="inline-flex items-center gap-2 text-sm">
+                    <input type="radio" name="sex" checked={sex === "homme"} onChange={() => setSex("homme")} />
+                    Homme
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-sm">
+                    <input type="radio" name="sex" checked={sex === "femme"} onChange={() => setSex("femme")} />
+                    Femme
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="activity" className="mb-1 block text-sm font-medium text-[#39393A]">Niveau d’activité</label>
+              <select
+                id="activity"
+                value={activity}
+                onChange={(e) => setActivity(Number(e.target.value))}
+                className="h-12 w-full rounded-xl border border-black/10 bg-white px-4 text-base outline-none transition focus:border-[#FCAB10] focus:shadow-[0_0_0_3px_rgba(252,171,16,0.25)]"
+              >
+                <option value={1.2}>Sédentaire (1,2)</option>
+                <option value={1.375}>Légèrement actif (1,375)</option>
+                <option value={1.55}>Modérément actif (1,55)</option>
+                <option value={1.725}>Très actif (1,725)</option>
+                <option value={1.9}>Extrêmement actif (1,9)</option>
+              </select>
+            </div>
+
             <button
               type="submit"
               className="mt-2 inline-flex h-12 items-center justify-center rounded-xl bg-[#FCAB10] px-6 text-base font-semibold text-[#F5F5F5] shadow hover:brightness-95 active:translate-y-px active:shadow-sm"
@@ -111,6 +181,56 @@ export default function FitTrackHome() {
                 <span>25</span>
                 <span>30</span>
                 <span>40</span>
+              </div>
+              {/* Résultats supplémentaires */}
+              <div className="mt-5 grid gap-3">
+                {waterL !== null && (
+                  <div className="rounded-lg bg-white p-3 border border-black/5">
+                    <p className="text-sm font-medium text-[#39393A]">💧 Besoins en eau (estimation)</p>
+                    <p className="text-sm text-[#333333]/80">Eau (L/jour) = poids (kg) × 0,03</p>
+                    <p className="mt-1 text-lg font-semibold text-[#39393A]">≈ {waterL} L/jour</p>
+                    <p className="text-xs text-[#333333]/70 mt-1">+0,5 à +1 L si activité intense ou forte chaleur. L’alimentation (fruits, légumes) apporte aussi de l’eau.</p>
+                  </div>
+                )}
+                {bmr !== null && (
+                  <div className="rounded-lg bg-white p-3 border border-black/5">
+                    <p className="text-sm font-medium text-[#39393A]">🔥 BMR (métabolisme de base)</p>
+                    <p className="mt-1 text-lg font-semibold text-[#39393A]">≈ {bmr} kcal/jour</p>
+                  </div>
+                )}
+                {tdee !== null && (
+                  <div className="rounded-lg bg-white p-3 border border-black/5">
+                    <p className="text-sm font-medium text-[#39393A]">⚡ TDEE (dépense énergétique totale)</p>
+                    <p className="mt-1 text-lg font-semibold text-[#39393A]">≈ {tdee} kcal/jour</p>
+                    <p className="text-xs text-[#333333]/70 mt-1">TDEE = BMR × facteur d’activité. Inclut mouvements quotidiens et activité physique.</p>
+                  </div>
+                )}
+                {bodyFat !== null && (
+                  <div className="rounded-lg bg-white p-3 border border-black/5">
+                    <p className="text-sm font-medium text-[#39393A]">Calcule Masse Graisseuse (estimation)</p>
+                    <p className="text-sm text-[#333333]/80">%MG = 1,20 × IMC + 0,23 × âge {sex === "homme" ? "- 16,2" : "- 5,4"}</p>
+                    <p className="mt-1 text-lg font-semibold text-[#39393A]">≈ {bodyFat}%</p>
+                    <div className="mt-2 text-xs text-[#333333]/80">
+                      {sex === "homme" ? (
+                        <div className="grid grid-cols-5 gap-2">
+                          <span>2–5: Athlète</span>
+                          <span>6–13: Fitness</span>
+                          <span>14–17: Acceptable</span>
+                          <span>18–24: Moyenne</span>
+                          <span>25+: Élevé</span>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-5 gap-2">
+                          <span>10–13: Athlète</span>
+                          <span>14–20: Fitness</span>
+                          <span>21–24: Acceptable</span>
+                          <span>25–31: Moyenne</span>
+                          <span>32+: Élevé</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
