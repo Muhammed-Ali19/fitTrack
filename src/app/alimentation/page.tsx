@@ -44,6 +44,7 @@ export default function AlimentationPage() {
     const [activeTab, setActiveTab] = useState<"recherche" | "repas" | "historique">("recherche");
     const [meal, setMeal] = useState<MealEntry[]>([]);
     const [history, setHistory] = useState<string[]>([]);
+    const [portions, setPortions] = useState<Record<string, number>>({});
     // Debug UI retirée
 
     const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -111,6 +112,17 @@ export default function AlimentationPage() {
             }
             const items: NutritionItem[] = Array.isArray(json?.items) ? json.items : Array.isArray(json) ? json : [];
             setResults(items);
+            // initialize default portions for each result row
+            setPortions((prev) => {
+                const next = { ...prev } as Record<string, number>;
+                items.forEach((it, i) => {
+                    const key = `${it.name}-${i}`;
+                    if (next[key] == null) {
+                        next[key] = it.serving_size_g && it.serving_size_g > 0 ? Math.round(it.serving_size_g) : 100;
+                    }
+                });
+                return next;
+            });
             // persist history
             try {
                 const next = [q, ...history.filter((x) => x !== q)].slice(0, 10);
@@ -214,21 +226,51 @@ export default function AlimentationPage() {
                             {!loading && results.length > 0 && (
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     {results.map((item, idx) => {
-                                        const kcal = Math.round(item.calories || 0);
-                                        const protein = formatNumber(item.protein_g);
-                                        const carbs = formatNumber(item.carbohydrates_total_g);
-                                        const fat = formatNumber(item.fat_total_g);
+                                        const key = `${item.name}-${idx}`;
+                                        const portion = portions[key] ?? (item.serving_size_g || 100);
+                                        // Calcul dynamique des valeurs selon la portion choisie
+                                        const baseRef = item.serving_size_g && item.serving_size_g > 0 ? item.serving_size_g : 100;
+                                        const ratio = (portion || 0) / baseRef;
+                                        const kcal = Math.round((item.calories || 0) * ratio);
+                                        const protein = formatNumber((item.protein_g || 0) * ratio);
+                                        const carbs = formatNumber((item.carbohydrates_total_g || 0) * ratio);
+                                        const fat = formatNumber((item.fat_total_g || 0) * ratio);
+
                                         const totalMacros = protein + carbs + fat || 1;
                                         const pPct = Math.min(100, Math.round((protein / totalMacros) * 100));
                                         const cPct = Math.min(100, Math.round((carbs / totalMacros) * 100));
                                         const fPct = Math.min(100, Math.round((fat / totalMacros) * 100));
+
+                                        const adjustedItem = {
+                                            ...item,
+                                            serving_size_g: portion,
+                                            calories: kcal,
+                                            protein_g: protein,
+                                            carbohydrates_total_g: carbs,
+                                            fat_total_g: fat,
+                                        };
 
                                         return (
                                             <div key={`${item.name}-${idx}`} className="rounded-2xl bg-white border border-black/5 p-5 shadow-md">
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div>
                                                         <h3 className="text-lg font-semibold capitalize text-[#39393A]">{item.name}</h3>
-                                                        <p className="text-xs text-[#333333]/70">Portion: {item.serving_size_g} g</p>
+                                                        <label className="text-xs text-[#333333]/70 flex items-center gap-2">
+                                                            Portion :
+                                                            <input
+                                                                type="number"
+                                                                min={0}
+                                                                max={5000}
+                                                                value={portion}
+                                                                onChange={(e) => {
+                                                                    const num = Number(e.target.value);
+                                                                    const val = Number.isFinite(num) ? Math.max(0, Math.round(num)) : 0;
+                                                                    setPortions((p) => ({ ...p, [key]: val }));
+                                                                }}
+                                                                className="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-[#FCAB10]"
+                                                            />{" "}
+                                                            g
+                                                        </label>
                                                     </div>
                                                     <div className="text-right">
                                                         <div className="text-2xl font-extrabold text-[#FCAB10]">{kcal}</div>
@@ -248,15 +290,15 @@ export default function AlimentationPage() {
                                                 </div>
 
                                                 <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                                                    <span className="rounded-full bg-[#39393A] text-white/95 px-2.5 py-1">Fibres {item.fiber_g} g</span>
-                                                    <span className="rounded-full bg-[#39393A] text-white/95 px-2.5 py-1">Sucres {item.sugar_g} g</span>
-                                                    <span className="rounded-full bg-[#39393A] text-white/95 px-2.5 py-1">Sodium {item.sodium_mg} mg</span>
-                                                    <span className="rounded-full bg-[#39393A] text-white/95 px-2.5 py-1">Cholest. {item.cholesterol_mg} mg</span>
+                                                    <span className="rounded-full bg-[#39393A] text-white/95 px-2.5 py-1">Fibres {formatNumber((item.fiber_g || 0) * ratio)} g</span>
+                                                    <span className="rounded-full bg-[#39393A] text-white/95 px-2.5 py-1">Sucres {formatNumber((item.sugar_g || 0) * ratio)} g</span>
+                                                    <span className="rounded-full bg-[#39393A] text-white/95 px-2.5 py-1">Sodium {Math.round((item.sodium_mg || 0) * ratio)} mg</span>
+                                                    <span className="rounded-full bg-[#39393A] text-white/95 px-2.5 py-1">Cholest. {Math.round((item.cholesterol_mg || 0) * ratio)} mg</span>
                                                 </div>
 
                                                 <div className="mt-4">
                                                     <button
-                                                        onClick={() => addToMeal(item)}
+                                                        onClick={() => addToMeal(adjustedItem)}
                                                         className="w-full bg-[#FCAB10] text-white py-2 rounded-lg hover:brightness-95"
                                                     >
                                                         Ajouter au repas
@@ -265,6 +307,7 @@ export default function AlimentationPage() {
                                             </div>
                                         );
                                     })}
+
                                 </div>
                             )}
                         </section>
