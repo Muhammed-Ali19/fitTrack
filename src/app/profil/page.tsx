@@ -1,9 +1,10 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Nav from "../components/Nav";
-import { auth, db } from "@/firebaseClient";
+import { auth, db, storage } from "@/firebaseClient";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -13,14 +14,30 @@ type UserProfile = {
     email?: string;
     birthDate?: string;
     heightCm?: number;
+    photoUrl?: string;
+    sex?: "M" | "F" | "Other";
+    training?: {
+        sessionsPerWeek?: number;
+        planType?: string;
+    };
+    nutrition?: {
+        goalCode?: string;
+        activityFactor?: number;
+        targetDeltaKcal?: number;
+    };
 };
 
 // Small avatar
-const Avatar: React.FC = () => (
-    <div className="relative h-24 w-24 shrink-0 rounded-full bg-[#FCAB10] grid place-items-center shadow-md ring-8 ring-white/70">
-        <svg viewBox="0 0 24 24" className="h-12 w-12 text-[#39393A]">
-            <path fill="currentColor" d="M12 2a5 5 0 1 0 0 10a5 5 0 0 0 0-10ZM4 20.5C4 16.91 7.58 14 12 14s8 2.91 8 6.5V22H4z"/>
-        </svg>
+const Avatar: React.FC<{ photoUrl?: string }> = ({ photoUrl }) => (
+    <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-[#FCAB10] grid place-items-center shadow-md ring-8 ring-white/70">
+        {photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photoUrl} alt="Profil" className="h-full w-full object-cover" />
+        ) : (
+            <svg viewBox="0 0 24 24" className="h-12 w-12 text-[#39393A]">
+                <path fill="currentColor" d="M12 2a5 5 0 1 0 0 10a5 5 0 0 0 0-10ZM4 20.5C4 16.91 7.58 14 12 14s8 2.91 8 6.5V22H4z" />
+            </svg>
+        )}
     </div>
 );
 
@@ -31,7 +48,11 @@ const Field: React.FC<{label: string; value: React.ReactNode}> = ({label, value}
     </div>
 );
 
-const ProfileCard: React.FC<{ profile: UserProfile }> = ({ profile }) => {
+const ProfileCard: React.FC<{
+    profile: UserProfile;
+    onRequestPhoto: () => void;
+    uploadingPhoto: boolean;
+}> = ({ profile, onRequestPhoto, uploadingPhoto }) => {
     const formattedBirthDate = useMemo(() => {
         if (!profile.birthDate) return "Non renseignee";
         const date = new Date(`${profile.birthDate}T00:00:00`);
@@ -45,6 +66,63 @@ const ProfileCard: React.FC<{ profile: UserProfile }> = ({ profile }) => {
         return `${profile.heightCm} cm`;
     }, [profile.heightCm]);
 
+    const sexLabel = useMemo(() => {
+        switch (profile.sex) {
+            case "M":
+                return "Homme";
+            case "F":
+                return "Femme";
+            case "Other":
+                return "Autre";
+            default:
+                return "Non renseigne";
+        }
+    }, [profile.sex]);
+
+    const trainingSessionsDisplay = profile.training?.sessionsPerWeek
+        ? `${profile.training.sessionsPerWeek} / semaine`
+        : "Non renseigne";
+
+    const trainingPlanLabel = useMemo(() => {
+        switch (profile.training?.planType) {
+            case "FULL_BODY":
+                return "Full Body";
+            case "UPPER_LOWER":
+                return "Upper / Lower";
+            case "SPLIT_4":
+                return "Split 4 jours";
+            case "PPL":
+                return "Push Pull Legs";
+            default:
+                return "Non renseigne";
+        }
+    }, [profile.training?.planType]);
+
+    const nutritionGoalLabel = useMemo(() => {
+        switch (profile.nutrition?.goalCode) {
+            case "MASS_GAIN":
+                return "Prise de masse";
+            case "MUSCLE_MAINTAIN":
+                return "Maintenance musculaire";
+            case "CUTTING":
+                return "Seche";
+            case "GET_BACK_IN_SHAPE":
+                return "Reprendre la forme";
+            default:
+                return "Non renseigne";
+        }
+    }, [profile.nutrition?.goalCode]);
+
+    const nutritionActivityDisplay =
+        profile.nutrition?.activityFactor != null
+            ? `${profile.nutrition.activityFactor}`
+            : "Non renseigne";
+
+    const nutritionDeltaDisplay =
+        profile.nutrition?.targetDeltaKcal != null
+            ? `${profile.nutrition.targetDeltaKcal} kcal`
+            : "Non renseigne";
+
     return (
         <section className="mx-auto w-[min(1100px,92%)] mt-10">
         <div className="rounded-3xl bg-white/90 backdrop-blur-sm shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-black/5 p-6 sm:p-10 relative overflow-hidden">
@@ -53,7 +131,16 @@ const ProfileCard: React.FC<{ profile: UserProfile }> = ({ profile }) => {
             <div className="pointer-events-none absolute -left-24 -bottom-24 h-64 w-64 rounded-full bg-[#FCAB10]/15 blur-3xl" />
 
             <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-10">
-                <Avatar />
+                <div className="flex flex-col items-start gap-3">
+                    <Avatar photoUrl={profile.photoUrl} />
+                    <button
+                        type="button"
+                        onClick={onRequestPhoto}
+                        className="rounded-lg border border-[#FCAB10] px-3 py-1 text-sm font-semibold text-[#39393A] hover:bg-[#FCAB10]/10 transition"
+                    >
+                        {uploadingPhoto ? "Envoi en cours..." : "Changer la photo"}
+                    </button>
+                </div>
                 <div>
                     <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[#39393A]">Page profil</h1>
                     <p className="text-[#39393A]/60 mt-1">Vos informations personnelles</p>
@@ -78,17 +165,29 @@ const ProfileCard: React.FC<{ profile: UserProfile }> = ({ profile }) => {
                             )
                         }
                     />
+                    <div className="h-px bg-black/5 my-2" />
+                    <Field label="Sexe" value={sexLabel} />
                 </div>
 
                 <div className="rounded-2xl border border-black/5 bg-white p-5">
                     <Field label="Date de naissance" value={formattedBirthDate} />
                     <div className="h-px bg-black/5 my-2" />
                     <Field label="Taille" value={heightDisplay} />
+                    <div className="h-px bg-black/5 my-2" />
+                    <Field label="Seances par semaine" value={trainingSessionsDisplay} />
+                    <div className="h-px bg-black/5 my-2" />
+                    <Field label="Programme" value={trainingPlanLabel} />
+                    <div className="h-px bg-black/5 my-2" />
+                    <Field label="Objectif nutrition" value={nutritionGoalLabel} />
+                    <div className="h-px bg-black/5 my-2" />
+                    <Field label="Facteur d'activite" value={nutritionActivityDisplay} />
+                    <div className="h-px bg-black/5 my-2" />
+                    <Field label="Delta calorique" value={nutritionDeltaDisplay} />
                 </div>
             </div>
 
             <div className="mt-8 flex items-center justify-end">
-                <Link href="/inscription" className="inline-flex items-center gap-2 rounded-xl border border-[#FCAB10] px-5 py-3 text-[#39393A] font-semibold shadow hover:bg-[#FCAB10]/10 transition">
+                <Link href="/modifierProfile" className="inline-flex items-center gap-2 rounded-xl border border-[#FCAB10] px-5 py-3 text-[#39393A] font-semibold shadow hover:bg-[#FCAB10]/10 transition">
                     Modifier le profil
                 </Link>
             </div>
@@ -101,7 +200,10 @@ export default function ProfilePage() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
+    const [userId, setUserId] = useState<string | null>(null);
     const router = useRouter();
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -111,6 +213,7 @@ export default function ProfilePage() {
                 router.push("/connexion");
                 return;
             }
+            setUserId(firebaseUser.uid);
             try {
                 const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
                 if (userDoc.exists()) {
@@ -119,6 +222,7 @@ export default function ProfilePage() {
                         ...data,
                         email: firebaseUser.email ?? data.email,
                         heightCm: data.heightCm != null ? Number(data.heightCm) : undefined,
+                        photoUrl: data.photoUrl,
                     });
                 } else {
                     setProfile({
@@ -138,6 +242,38 @@ export default function ProfilePage() {
     const handleLogout = async () => {
         await signOut(auth);
         router.push("/connexion");
+    };
+
+    const handleChoosePhoto = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !userId) {
+            return;
+        }
+        setUploadingPhoto(true);
+        setError(null);
+        try {
+            const photoRef = ref(storage, `users/${userId}/profile-${Date.now()}`);
+            await uploadBytes(photoRef, file);
+            const url = await getDownloadURL(photoRef);
+            const userDocRef = doc(db, "users", userId);
+            await updateDoc(userDocRef, {
+                photoUrl: url,
+                updatedAt: serverTimestamp(),
+            });
+            setProfile((prev) => (prev ? { ...prev, photoUrl: url } : prev));
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Impossible de mettre a jour la photo.";
+            setError(message);
+        } finally {
+            setUploadingPhoto(false);
+        }
     };
 
     if (loading) {
@@ -169,7 +305,14 @@ export default function ProfilePage() {
     return (
         <div>
             <Nav />
-            <ProfileCard profile={profile} />
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+            />
+            <ProfileCard profile={profile} onRequestPhoto={handleChoosePhoto} uploadingPhoto={uploadingPhoto} />
             <div className="mx-auto mt-6 flex w-[min(1100px,92%)] justify-end">
                 <button
                     onClick={handleLogout}

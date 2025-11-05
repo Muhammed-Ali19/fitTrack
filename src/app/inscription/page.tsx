@@ -39,6 +39,19 @@ export default function InscriptionPage() {
                 email,
                 birthDate,
                 heightCm: parsedHeight,
+                sex: "Other",
+                training: {
+                    sessionsPerWeek: 3,
+                    planType: "UPPER_LOWER",
+                },
+                nutrition: {
+                    goalCode: "GET_BACK_IN_SHAPE",
+                    activityFactor: 1.4,
+                    targetDeltaKcal: 0,
+                    maintenanceKcal: null,
+                    targetKcal: null,
+                },
+                photoUrl: null,
                 createdAt: serverTimestamp(),
             });
             router.push("/profil");
