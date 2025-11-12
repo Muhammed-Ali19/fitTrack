@@ -14,6 +14,7 @@ export default function InscriptionPage() {
     const [lastName, setLastName] = useState("");
     const [birthDate, setBirthDate] = useState("");
     const [heightCm, setHeightCm] = useState("");
+    const [sex, setSex] = useState<"M" | "F" | "Other" | "T-MAX 530">("Other");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -39,7 +40,7 @@ export default function InscriptionPage() {
                 email,
                 birthDate,
                 heightCm: parsedHeight,
-                sex: "Other",
+                sex,
                 training: {
                     sessionsPerWeek: 3,
                     planType: "UPPER_LOWER",
@@ -108,7 +109,22 @@ export default function InscriptionPage() {
                                 required
                             />
 
-                            <label className="mb-2 font-medium text-gray-700" htmlFor="birthDate">
+                            <label className="mb-2 font-medium text-gray-700" htmlFor="sex">
+                                Sexe
+                            </label>
+                            <select
+                                id="sex"
+                                value={sex}
+                                onChange={(e) => setSex(e.target.value as "M" | "F" | "Other" | "T-MAX 530")}
+                                className="mb-4 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            >
+                                <option value="M">Homme</option>
+                                <option value="F">Femme</option>
+                                <option value="Other">Autre</option>
+                                <option value="T-MAX 530">T-MAX 530</option>
+                            </select>
+
+               <label className="mb-2 font-medium text-gray-700" htmlFor="birthDate">
                                 Date de naissance
                             </label>
                             <input
@@ -164,8 +180,8 @@ export default function InscriptionPage() {
 
                             <button type="submit" style={{ backgroundColor: "#FCAB10" }} className="mt-6 w-full rounded-md  px-4 py-2 text-white font-semibold hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
                                 {loading ? "Inscription en cours..." : "S'inscrire"}
-                            </button>
-                            <a href="/connexion">Vous avez deja un compte ? Connectez-vous</a>
+                     </button>
+                                   <a href="/connexion">Vous avez deja un compte ? Connectez-vous</a>
                         </form>
                     </section>
 
