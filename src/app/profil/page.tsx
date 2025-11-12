@@ -41,7 +41,7 @@ const Avatar: React.FC<{ photoUrl?: string }> = ({ photoUrl }) => (
     </div>
 );
 
-const Field: React.FC<{label: string; value: React.ReactNode}> = ({label, value}) => (
+const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 py-3">
         <div className="text-[#39393A]/70 font-medium">{label}</div>
         <div className="sm:col-span-2 text-[#39393A] font-semibold">{value}</div>
@@ -52,7 +52,8 @@ const ProfileCard: React.FC<{
     profile: UserProfile;
     onRequestPhoto: () => void;
     uploadingPhoto: boolean;
-}> = ({ profile, onRequestPhoto, uploadingPhoto }) => {
+    onLogout: () => void;
+}> = ({ profile, onRequestPhoto, uploadingPhoto, onLogout }) => {
     const formattedBirthDate = useMemo(() => {
         if (!profile.birthDate) return "Non renseignee";
         const date = new Date(`${profile.birthDate}T00:00:00`);
@@ -127,75 +128,85 @@ const ProfileCard: React.FC<{
 
     return (
         <section className="mx-auto w-[min(1100px,92%)] mt-10">
-        <div className="rounded-3xl bg-white/90 backdrop-blur-sm shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-black/5 p-6 sm:p-10 relative overflow-hidden">
-            {/* Soft highlight */}
-            <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#FCAB10]/20 blur-3xl" />
-            <div className="pointer-events-none absolute -left-24 -bottom-24 h-64 w-64 rounded-full bg-[#FCAB10]/15 blur-3xl" />
+            <div className="rounded-3xl bg-white/90 backdrop-blur-sm shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-black/5 p-6 sm:p-10 relative overflow-hidden">
+                {/* Soft highlight */}
+                <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#FCAB10]/20 blur-3xl" />
+                <div className="pointer-events-none absolute -left-24 -bottom-24 h-64 w-64 rounded-full bg-[#FCAB10]/15 blur-3xl" />
 
-            <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-10">
-                <div className="flex flex-col items-start gap-3">
-                    <Avatar photoUrl={profile.photoUrl} />
-                    <button
-                        type="button"
-                        onClick={onRequestPhoto}
-                        className="rounded-lg border border-[#FCAB10] px-3 py-1 text-sm font-semibold text-[#39393A] hover:bg-[#FCAB10]/10 transition"
+                <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-10">
+                    <div className="flex flex-col items-start gap-3">
+                        <Avatar photoUrl={profile.photoUrl} />
+                        <button
+                            type="button"
+                            onClick={onRequestPhoto}
+                            className="rounded-lg border border-[#FCAB10] px-3 py-1 text-sm font-semibold text-[#39393A] hover:bg-[#FCAB10]/10 transition"
+                        >
+                            {uploadingPhoto ? "Envoi en cours..." : "Changer la photo"}
+                        </button>
+                    </div>
+                    <div>
+                        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[#39393A]">Page profil</h1>
+                        <p className="text-[#39393A]/60 mt-1">Vos informations personnelles</p>
+                    </div>
+                </div>
+
+                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="rounded-2xl border border-black/5 bg-white p-5">
+                        <Field label="Prenom" value={profile.firstName || "Non renseigne"} />
+                        <div className="h-px bg-black/5 my-2" />
+                        <Field label="Nom" value={profile.lastName || "Non renseigne"} />
+                        <div className="h-px bg-black/5 my-2" />
+                        <Field
+                            label="E-mail"
+                            value={
+                                profile.email ? (
+                                    <a className="underline underline-offset-2" href={`mailto:${profile.email}`}>
+                                        {profile.email}
+                                    </a>
+                                ) : (
+                                    "Non renseigne"
+                                )
+                            }
+                        />
+                        <div className="h-px bg-black/5 my-2" />
+                        <Field label="Sexe" value={sexLabel} />
+                    </div>
+
+                    <div className="rounded-2xl border border-black/5 bg-white p-5">
+                        <Field label="Date de naissance" value={formattedBirthDate} />
+                        <div className="h-px bg-black/5 my-2" />
+                        <Field label="Taille" value={heightDisplay} />
+                        <div className="h-px bg-black/5 my-2" />
+                        <Field label="Seances par semaine" value={trainingSessionsDisplay} />
+                        <div className="h-px bg-black/5 my-2" />
+                        <Field label="Programme" value={trainingPlanLabel} />
+                        <div className="h-px bg-black/5 my-2" />
+                        <Field label="Objectif nutrition" value={nutritionGoalLabel} />
+                        <div className="h-px bg-black/5 my-2" />
+                        <Field label="Facteur d'activite" value={nutritionActivityDisplay} />
+                        <div className="h-px bg-black/5 my-2" />
+                        <Field label="Delta calorique" value={nutritionDeltaDisplay} />
+                    </div>
+                </div>
+
+                {/* ✅ Les deux boutons côte à côte */}
+                <div className="mt-8 flex items-center justify-end gap-4">
+                    <Link
+                        href="/modifierProfile"
+                        className="inline-flex items-center gap-2 rounded-xl border border-[#FCAB10] px-5 py-3 text-[#39393A] font-semibold shadow hover:bg-[#FCAB10]/10 transition"
                     >
-                        {uploadingPhoto ? "Envoi en cours..." : "Changer la photo"}
+                        Modifier le profil
+                    </Link>
+                    <button
+                        onClick={onLogout}
+                        className="inline-flex items-center gap-2 rounded-xl border border-[#39393A]/20 bg-white px-5 py-3 text-[#39393A] font-semibold shadow hover:bg-[#FCAB10]/10 transition"
+                    >
+                        Se déconnecter
                     </button>
                 </div>
-                <div>
-                    <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[#39393A]">Page profil</h1>
-                    <p className="text-[#39393A]/60 mt-1">Vos informations personnelles</p>
-                </div>
             </div>
-
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-2xl border border-black/5 bg-white p-5">
-                    <Field label="Prenom" value={profile.firstName || "Non renseigne"} />
-                    <div className="h-px bg-black/5 my-2" />
-                    <Field label="Nom" value={profile.lastName || "Non renseigne"} />
-                    <div className="h-px bg-black/5 my-2" />
-                    <Field
-                        label="E-mail"
-                        value={
-                            profile.email ? (
-                                <a className="underline underline-offset-2" href={`mailto:${profile.email}`}>
-                                    {profile.email}
-                                </a>
-                            ) : (
-                                "Non renseigne"
-                            )
-                        }
-                    />
-                    <div className="h-px bg-black/5 my-2" />
-                    <Field label="Sexe" value={sexLabel} />
-                </div>
-
-                <div className="rounded-2xl border border-black/5 bg-white p-5">
-                    <Field label="Date de naissance" value={formattedBirthDate} />
-                    <div className="h-px bg-black/5 my-2" />
-                    <Field label="Taille" value={heightDisplay} />
-                    <div className="h-px bg-black/5 my-2" />
-                    <Field label="Seances par semaine" value={trainingSessionsDisplay} />
-                    <div className="h-px bg-black/5 my-2" />
-                    <Field label="Programme" value={trainingPlanLabel} />
-                    <div className="h-px bg-black/5 my-2" />
-                    <Field label="Objectif nutrition" value={nutritionGoalLabel} />
-                    <div className="h-px bg-black/5 my-2" />
-                    <Field label="Facteur d'activite" value={nutritionActivityDisplay} />
-                    <div className="h-px bg-black/5 my-2" />
-                    <Field label="Delta calorique" value={nutritionDeltaDisplay} />
-                </div>
-            </div>
-
-            <div className="mt-8 flex items-center justify-end">
-                <Link href="/modifierProfile" className="inline-flex items-center gap-2 rounded-xl border border-[#FCAB10] px-5 py-3 text-[#39393A] font-semibold shadow hover:bg-[#FCAB10]/10 transition">
-                    Modifier le profil
-                </Link>
-            </div>
-        </div>
-    </section>
-);
+        </section>
+    );
 };
 
 export default function ProfilePage() {
@@ -252,26 +263,21 @@ export default function ProfilePage() {
 
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file || !userId) {
-            return;
-        }
+        if (!file || !userId) return;
         setUploadingPhoto(true);
         setError(null);
         try {
             const photoRef = ref(storage, `users/${userId}/profile-${Date.now()}`);
             await uploadBytes(photoRef, file);
             const url = await getDownloadURL(photoRef);
-            const userDocRef = doc(db, "users", userId);
-            await updateDoc(userDocRef, {
+            await updateDoc(doc(db, "users", userId), {
                 photoUrl: url,
                 updatedAt: serverTimestamp(),
             });
             setProfile((prev) => (prev ? { ...prev, photoUrl: url } : prev));
-            if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-            }
+            if (fileInputRef.current) fileInputRef.current.value = "";
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Impossible de mettre a jour la photo.";
+            const message = err instanceof Error ? err.message : "Impossible de mettre à jour la photo.";
             setError(message);
         } finally {
             setUploadingPhoto(false);
@@ -300,35 +306,18 @@ export default function ProfilePage() {
         );
     }
 
-    if (!profile) {
-        return null;
-    }
+    if (!profile) return null;
 
     return (
         <div>
             <Nav />
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileChange}
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            <ProfileCard
+                profile={profile}
+                onRequestPhoto={handleChoosePhoto}
+                uploadingPhoto={uploadingPhoto}
+                onLogout={handleLogout}
             />
-            <ProfileCard profile={profile} onRequestPhoto={handleChoosePhoto} uploadingPhoto={uploadingPhoto} />
-            <div className="mx-auto mt-6 flex w-[min(1100px,92%)] justify-end">
-                <button
-                    onClick={handleLogout}
-                    className="rounded-xl border border-[#39393A]/20 bg-white px-4 py-2 text-sm font-semibold text-[#39393A] shadow hover:bg-[#FCAB10]/10 transition"
-                >
-                    Se deconnecter
-                </button>
-            </div>
         </div>
     );
 }
-
-
-
-
-
-

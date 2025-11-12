@@ -66,19 +66,29 @@ export default function InscriptionPage() {
 
     const upsertUserDoc = async (uid: string, emailVal?: string, extra?: Record<string, unknown>) => {
         const userDoc = doc(db, "users", uid);
-        await setDoc(userDoc, {
-            firstName,
-            lastName,
-            email: emailVal ?? email,
-            birthDate,
-            heightCm: Number(heightCm) || null,
-            sex: "Other",
-            training: { sessionsPerWeek: 3, planType: "UPPER_LOWER" },
-            nutrition: { goalCode: "GET_BACK_IN_SHAPE", activityFactor: 1.4, targetDeltaKcal: 0, maintenanceKcal: null, targetKcal: null },
-            photoUrl: null,
-            createdAt: serverTimestamp(),
-            ...extra,
-        }, { merge: true });
+        await setDoc(
+            userDoc,
+            {
+                firstName,
+                lastName,
+                email: emailVal ?? email,
+                birthDate,
+                heightCm: Number(heightCm) || null,
+                sex: "Other",
+                training: { sessionsPerWeek: 3, planType: "UPPER_LOWER" },
+                nutrition: {
+                    goalCode: "GET_BACK_IN_SHAPE",
+                    activityFactor: 1.4,
+                    targetDeltaKcal: 0,
+                    maintenanceKcal: null,
+                    targetKcal: null,
+                },
+                photoUrl: null,
+                createdAt: serverTimestamp(),
+                ...extra,
+            },
+            { merge: true }
+        );
     };
 
     const handleGoogle = async () => {
@@ -97,13 +107,11 @@ export default function InscriptionPage() {
         }
     };
 
-
-
     return (
         <>
             <div className="relative min-h-screen overflow-hidden bg-[#F5F5F5] font-sans text-[#333333]">
                 <Nav />
-                <main className="min-h-screen flex flex-col items-center p-8 font-sans ">
+                <main className="min-h-screen flex flex-col items-center p-8 font-sans">
                     {/* FORMULAIRE D'INSCRIPTION */}
                     <section className="mt-12 w-full max-w-md bg-white p-8 rounded-2xl shadow-lg shadow-black/5">
                         <h2 className="text-2xl font-bold mb-6 text-center">Inscription</h2>
@@ -184,9 +192,7 @@ export default function InscriptionPage() {
                             />
 
                             {error && (
-                                <p className="mb-4 rounded-md bg-red-100 px-4 py-2 text-sm text-red-700">
-                                    {error}
-                                </p>
+                                <p className="mb-4 rounded-md bg-red-100 px-4 py-2 text-sm text-red-700">{error}</p>
                             )}
 
                             <label className="mb-2 font-medium text-gray-700" htmlFor="password">
@@ -213,35 +219,49 @@ export default function InscriptionPage() {
                                 required
                             />
 
-                            <button type="submit" style={{ backgroundColor: "#FCAB10" }} className="mt-6 w-full rounded-md  px-4 py-2 text-white font-semibold hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+                            <button
+                                type="submit"
+                                style={{ backgroundColor: "#FCAB10" }}
+                                className="mt-6 w-full rounded-md px-4 py-2 text-white font-semibold hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                            >
                                 {loading ? "Inscription en cours..." : "S'inscrire"}
                             </button>
+
                             <div className="mt-4 grid grid-cols-1 gap-3">
-                                <button type="button" onClick={handleGoogle} className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                {/* Bouton Google avec logo */}
+                                <button
+                                    type="button"
+                                    onClick={handleGoogle}
+                                    className="flex items-center justify-center gap-3 w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                >
+                                    <img
+                                        src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                                        alt="Google logo"
+                                        className="w-5 h-5"
+                                    />
                                     Continuer avec Google
                                 </button>
-
                             </div>
-                            <br></br>
-                            <a href="/connexion">Vous avez deja un compte ? Connectez-vous</a>
+
+                            <br />
+                            <a href="/connexion" className="text-sm text-center text-gray-600 hover:text-orange-600">
+                                Vous avez déjà un compte ? Connectez-vous
+                            </a>
                         </form>
                     </section>
 
                     <style>{`
-        .nav-link { color: #39393A; position: relative; }
-        .nav-link::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: transparent; transition: background 200ms ease; }
-        .nav-link:hover::after { background: #FCAB10; }
+                        .nav-link { color: #39393A; position: relative; }
+                        .nav-link::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: transparent; transition: background 200ms ease; }
+                        .nav-link:hover::after { background: #FCAB10; }
 
-        @keyframes floatBlob {
-          0%,100% { transform: translate(0,0) scale(1); }
-          50% { transform: translate(20px, -15px) scale(1.05); }
-        }
-      `}</style>
+                        @keyframes floatBlob {
+                            0%,100% { transform: translate(0,0) scale(1); }
+                            50% { transform: translate(20px, -15px) scale(1.05); }
+                        }
+                    `}</style>
                 </main>
             </div>
-
         </>
-
     );
 }
-
