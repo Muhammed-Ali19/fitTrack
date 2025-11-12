@@ -1,7 +1,15 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
+import { auth, db } from "@/firebaseClient";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { useRouter } from "next/navigation";
+
+type UserProfile = {
+    photoUrl?: string;
+};
 
 interface Exercice {
     nom: string;
@@ -19,6 +27,8 @@ interface Seance {
 }
 
 export default function SeancesPage() {
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [loading, setLoading] = useState(true);
     const [seances, setSeances] = useState<Seance[]>([]);
     const [titre, setTitre] = useState("");
     const [objectif, setObjectif] = useState("Musculation");
@@ -27,10 +37,33 @@ export default function SeancesPage() {
     const [image, setImage] = useState("");
     const [exercices, setExercices] = useState<Exercice[]>([{ nom: "", repetitions: "" }]);
 
+    const router = useRouter();
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (!firebaseUser) {
+                router.push("/connexion");
+                return;
+            }
+
+            try {
+                const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data() as UserProfile;
+                    setProfile({ photoUrl: data.photoUrl });
+                }
+            } catch (err) {
+                console.error("Erreur récupération profil :", err);
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [router]);
+
     // ➕ Ajouter un exercice
-    const ajouterExercice = () => {
-        setExercices([...exercices, { nom: "", repetitions: "" }]);
-    };
+    const ajouterExercice = () => setExercices([...exercices, { nom: "", repetitions: "" }]);
 
     // 🔄 Modifier un exercice
     const handleExerciceChange = (index: number, field: keyof Exercice, value: string) => {
@@ -61,18 +94,18 @@ export default function SeancesPage() {
         setExercices([{ nom: "", repetitions: "" }]);
     };
 
-    // ❌ Supprimer
-    const supprimerSeance = (id: number) => {
-        setSeances(seances.filter((s) => s.id !== id));
-    };
+    // ❌ Supprimer séance
+    const supprimerSeance = (id: number) => setSeances(seances.filter((s) => s.id !== id));
 
     // 🧮 Récapitulatif
     const totalDuree = seances.reduce((acc, s) => acc + s.duree, 0);
     const dureeMoyenne = seances.length ? Math.round(totalDuree / seances.length) : 0;
 
+    if (loading) return <div>Chargement...</div>;
+
     return (
         <div className="relative min-h-screen overflow-hidden bg-[#F5F5F5] font-sans text-[#333]">
-            <Nav />
+            <Nav photoUrl={profile?.photoUrl} />
 
             <main className="p-8 flex flex-col items-center">
                 {/* Titre principal */}
@@ -101,9 +134,7 @@ export default function SeancesPage() {
                     onSubmit={ajouterSeance}
                     className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-2xl border border-[#FCAB10]/20 space-y-6"
                 >
-                    <h2 className="text-2xl font-semibold text-[#39393A] mb-4">
-                        ➕ Créer une nouvelle séance
-                    </h2>
+                    <h2 className="text-2xl font-semibold text-[#39393A] mb-4">➕ Créer une nouvelle séance</h2>
 
                     <div>
                         <label className="font-semibold text-[#39393A]">Nom de la séance</label>
@@ -172,9 +203,7 @@ export default function SeancesPage() {
 
                     {/* Exercices */}
                     <div>
-                        <label className="font-semibold text-[#39393A] block mb-2">
-                            Liste des exercices :
-                        </label>
+                        <label className="font-semibold text-[#39393A] block mb-2">Liste des exercices :</label>
                         {exercices.map((ex, i) => (
                             <div key={i} className="flex gap-4 mb-2">
                                 <input
@@ -193,19 +222,12 @@ export default function SeancesPage() {
                                 />
                             </div>
                         ))}
-                        <button
-                            type="button"
-                            onClick={ajouterExercice}
-                            className="text-[#FCAB10] font-semibold hover:underline mt-1"
-                        >
+                        <button type="button" onClick={ajouterExercice} className="text-[#FCAB10] font-semibold hover:underline mt-1">
                             + Ajouter un exercice
                         </button>
                     </div>
 
-                    <button
-                        type="submit"
-                        className="w-full bg-[#FCAB10] text-white font-semibold py-2 rounded-lg hover:bg-[#e69a0d] transition"
-                    >
+                    <button type="submit" className="w-full bg-[#FCAB10] text-white font-semibold py-2 rounded-lg hover:bg-[#e69a0d] transition">
                         Créer la séance
                     </button>
                 </form>
@@ -213,33 +235,18 @@ export default function SeancesPage() {
                 {/* Liste des séances */}
                 <section className="w-full max-w-4xl mt-10 space-y-6">
                     {seances.map((s) => (
-                        <div
-                            key={s.id}
-                            className="bg-white border border-[#FCAB10]/30 rounded-xl shadow-md overflow-hidden"
-                        >
+                        <div key={s.id} className="bg-white border border-[#FCAB10]/30 rounded-xl shadow-md overflow-hidden">
                             <div className="flex items-center gap-6 p-4">
-                                <img
-                                    src={s.image}
-                                    alt={s.titre}
-                                    className="w-32 h-32 object-cover rounded-xl border border-[#FCAB10]/20"
-                                />
+                                <img src={s.image} alt={s.titre} className="w-32 h-32 object-cover rounded-xl border border-[#FCAB10]/20" />
                                 <div className="flex-1">
                                     <h3 className="text-2xl font-bold text-[#39393A]">{s.titre}</h3>
-                                    <p className="text-sm text-gray-600 mb-1">
-                                        🎯 {s.objectif} | 💪 {s.niveau}
-                                    </p>
+                                    <p className="text-sm text-gray-600 mb-1">🎯 {s.objectif} | 💪 {s.niveau}</p>
                                     <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
-                                        <div
-                                            className="bg-[#FCAB10] h-3 rounded-full"
-                                            style={{ width: `${Math.min((s.duree / 120) * 100, 100)}%` }}
-                                        />
+                                        <div className="bg-[#FCAB10] h-3 rounded-full" style={{ width: `${Math.min((s.duree / 120) * 100, 100)}%` }} />
                                     </div>
                                     <p className="text-sm text-gray-700 mt-1">⏱️ {s.duree} minutes</p>
                                 </div>
-                                <button
-                                    onClick={() => supprimerSeance(s.id)}
-                                    className="bg-[#FF3D00] text-white px-3 py-2 rounded-lg hover:bg-red-600 transition"
-                                >
+                                <button onClick={() => supprimerSeance(s.id)} className="bg-[#FF3D00] text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                                     Supprimer
                                 </button>
                             </div>
@@ -257,11 +264,7 @@ export default function SeancesPage() {
                         </div>
                     ))}
 
-                    {seances.length === 0 && (
-                        <p className="text-center text-gray-500 mt-6">
-                            Aucune séance enregistrée. Commence à créer ton premier programme 💪
-                        </p>
-                    )}
+                    {seances.length === 0 && <p className="text-center text-gray-500 mt-6">Aucune séance enregistrée. Commence à créer ton premier programme 💪</p>}
                 </section>
             </main>
 

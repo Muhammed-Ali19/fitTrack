@@ -1,12 +1,10 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import Nav from "../components/Nav";
-import { auth, db, storage } from "@/firebaseClient";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { auth, db } from "@/firebaseClient";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 type UserProfile = {
     firstName?: string;
@@ -27,20 +25,82 @@ type UserProfile = {
     };
 };
 
-// Small avatar
+// -------------------- NAV --------------------
+type NavProps = {
+    photoUrl?: string;
+};
+
+const Nav: React.FC<NavProps> = ({ photoUrl }) => {
+    return (
+        <header className="relative z-10">
+            <nav className="mx-auto mt-6 w-[90%] max-w-5xl rounded-2xl border border-black/5 bg-white/90 shadow-lg shadow-black/5 backdrop-blur">
+                <div className="flex items-center justify-between px-6 py-3">
+                    {/* Logo */}
+                    <Link href="/">
+                        <img
+                            src="/img/logo.png"
+                            alt="FitTrack Logo"
+                            style={{ width: "40px", height: "40px" }}
+                        />
+                    </Link>
+
+                    {/* Liens */}
+                    <ul className="flex items-center gap-6 text-sm font-medium">
+                        <li>
+                            <Link href="/profil" className="nav-link">
+                                Profil
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/alimentation" className="nav-link">
+                                Alimentation
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/programme" className="nav-link">
+                                Programme
+                            </Link>
+                        </li>
+                    </ul>
+
+                    {/* Avatar */}
+                    <div className="ml-4">
+                        {photoUrl ? (
+                            <img
+                                src={photoUrl}
+                                alt="Avatar"
+                                className="h-10 w-10 rounded-full object-cover border-2 border-[#FCAB10]"
+                            />
+                        ) : (
+                            <div className="h-10 w-10 rounded-full bg-[#FCAB10] grid place-items-center text-white font-bold">
+                                ?
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </nav>
+
+            <style>{`
+        .nav-link { color: #39393A; position: relative; }
+        .nav-link::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: transparent; transition: background 200ms ease; }
+        .nav-link:hover::after { background: #FCAB10; }
+      `}</style>
+        </header>
+    );
+};
+
+// -------------------- AVATAR --------------------
 const Avatar: React.FC<{ photoUrl?: string }> = ({ photoUrl }) => (
     <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-[#FCAB10] grid place-items-center shadow-md ring-8 ring-white/70">
         {photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={photoUrl} alt="Profil" className="h-full w-full object-cover" />
         ) : (
-            <svg viewBox="0 0 24 24" className="h-12 w-12 text-[#39393A]">
-                <path fill="currentColor" d="M12 2a5 5 0 1 0 0 10a5 5 0 0 0 0-10ZM4 20.5C4 16.91 7.58 14 12 14s8 2.91 8 6.5V22H4z" />
-            </svg>
+            <div className="text-[#39393A] text-3xl font-bold">?</div>
         )}
     </div>
 );
 
+// -------------------- FIELD --------------------
 const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 py-3">
         <div className="text-[#39393A]/70 font-medium">{label}</div>
@@ -48,6 +108,7 @@ const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, val
     </div>
 );
 
+// -------------------- PROFILE CARD --------------------
 const ProfileCard: React.FC<{
     profile: UserProfile;
     onRequestPhoto: () => void;
@@ -55,81 +116,60 @@ const ProfileCard: React.FC<{
     onLogout: () => void;
 }> = ({ profile, onRequestPhoto, uploadingPhoto, onLogout }) => {
     const formattedBirthDate = useMemo(() => {
-        if (!profile.birthDate) return "Non renseignee";
+        if (!profile.birthDate) return "Non renseignée";
         const date = new Date(`${profile.birthDate}T00:00:00`);
         return Number.isNaN(date.getTime()) ? profile.birthDate : date.toLocaleDateString();
     }, [profile.birthDate]);
 
-    const heightDisplay = useMemo(() => {
-        if (profile.heightCm == null || Number.isNaN(Number(profile.heightCm))) {
-            return "Non renseignee";
-        }
-        return `${profile.heightCm} cm`;
-    }, [profile.heightCm]);
+    const heightDisplay = profile.heightCm != null ? `${profile.heightCm} cm` : "Non renseignée";
 
     const sexLabel = useMemo(() => {
         switch (profile.sex) {
-            case "M":
-                return "Homme";
-            case "F":
-                return "Femme";
-            case "Other":
-                return "Autre";
-            case "T-MAX 530":
-                return "T-MAX 530";
-            default:
-                return "Non renseigne";
+            case "M": return "Homme";
+            case "F": return "Femme";
+            case "Other": return "Autre";
+            case "T-MAX 530": return "T-MAX 530";
+            default: return "Non renseigné";
         }
     }, [profile.sex]);
 
     const trainingSessionsDisplay = profile.training?.sessionsPerWeek
         ? `${profile.training.sessionsPerWeek} / semaine`
-        : "Non renseigne";
+        : "Non renseigné";
 
     const trainingPlanLabel = useMemo(() => {
         switch (profile.training?.planType) {
-            case "FULL_BODY":
-                return "Full Body";
-            case "UPPER_LOWER":
-                return "Upper / Lower";
-            case "SPLIT_4":
-                return "Split 4 jours";
-            case "PPL":
-                return "Push Pull Legs";
-            default:
-                return "Non renseigne";
+            case "FULL_BODY": return "Full Body";
+            case "UPPER_LOWER": return "Upper / Lower";
+            case "SPLIT_4": return "Split 4 jours";
+            case "PPL": return "Push Pull Legs";
+            default: return "Non renseigné";
         }
     }, [profile.training?.planType]);
 
     const nutritionGoalLabel = useMemo(() => {
         switch (profile.nutrition?.goalCode) {
-            case "MASS_GAIN":
-                return "Prise de masse";
-            case "MUSCLE_MAINTAIN":
-                return "Maintenance musculaire";
-            case "CUTTING":
-                return "Seche";
-            case "GET_BACK_IN_SHAPE":
-                return "Reprendre la forme";
-            default:
-                return "Non renseigne";
+            case "MASS_GAIN": return "Prise de masse";
+            case "MUSCLE_MAINTAIN": return "Maintenance musculaire";
+            case "CUTTING": return "Sèche";
+            case "GET_BACK_IN_SHAPE": return "Reprendre la forme";
+            default: return "Non renseigné";
         }
     }, [profile.nutrition?.goalCode]);
 
     const nutritionActivityDisplay =
         profile.nutrition?.activityFactor != null
             ? `${profile.nutrition.activityFactor}`
-            : "Non renseigne";
+            : "Non renseigné";
 
     const nutritionDeltaDisplay =
         profile.nutrition?.targetDeltaKcal != null
             ? `${profile.nutrition.targetDeltaKcal} kcal`
-            : "Non renseigne";
+            : "Non renseigné";
 
     return (
         <section className="mx-auto w-[min(1100px,92%)] mt-10">
             <div className="rounded-3xl bg-white/90 backdrop-blur-sm shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-black/5 p-6 sm:p-10 relative overflow-hidden">
-                {/* Soft highlight */}
                 <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#FCAB10]/20 blur-3xl" />
                 <div className="pointer-events-none absolute -left-24 -bottom-24 h-64 w-64 rounded-full bg-[#FCAB10]/15 blur-3xl" />
 
@@ -152,44 +192,26 @@ const ProfileCard: React.FC<{
 
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="rounded-2xl border border-black/5 bg-white p-5">
-                        <Field label="Prenom" value={profile.firstName || "Non renseigne"} />
-                        <div className="h-px bg-black/5 my-2" />
-                        <Field label="Nom" value={profile.lastName || "Non renseigne"} />
-                        <div className="h-px bg-black/5 my-2" />
+                        <Field label="Prénom" value={profile.firstName || "Non renseigné"} />
+                        <Field label="Nom" value={profile.lastName || "Non renseigné"} />
                         <Field
                             label="E-mail"
-                            value={
-                                profile.email ? (
-                                    <a className="underline underline-offset-2" href={`mailto:${profile.email}`}>
-                                        {profile.email}
-                                    </a>
-                                ) : (
-                                    "Non renseigne"
-                                )
-                            }
+                            value={profile.email ? <a href={`mailto:${profile.email}`} className="underline">{profile.email}</a> : "Non renseigné"}
                         />
-                        <div className="h-px bg-black/5 my-2" />
                         <Field label="Sexe" value={sexLabel} />
                     </div>
 
                     <div className="rounded-2xl border border-black/5 bg-white p-5">
                         <Field label="Date de naissance" value={formattedBirthDate} />
-                        <div className="h-px bg-black/5 my-2" />
                         <Field label="Taille" value={heightDisplay} />
-                        <div className="h-px bg-black/5 my-2" />
-                        <Field label="Seances par semaine" value={trainingSessionsDisplay} />
-                        <div className="h-px bg-black/5 my-2" />
+                        <Field label="Séances / semaine" value={trainingSessionsDisplay} />
                         <Field label="Programme" value={trainingPlanLabel} />
-                        <div className="h-px bg-black/5 my-2" />
                         <Field label="Objectif nutrition" value={nutritionGoalLabel} />
-                        <div className="h-px bg-black/5 my-2" />
-                        <Field label="Facteur d'activite" value={nutritionActivityDisplay} />
-                        <div className="h-px bg-black/5 my-2" />
+                        <Field label="Facteur d'activité" value={nutritionActivityDisplay} />
                         <Field label="Delta calorique" value={nutritionDeltaDisplay} />
                     </div>
                 </div>
 
-                {/* ✅ Les deux boutons côte à côte */}
                 <div className="mt-8 flex items-center justify-end gap-4">
                     <Link
                         href="/modifierProfile"
@@ -209,14 +231,15 @@ const ProfileCard: React.FC<{
     );
 };
 
+// -------------------- PAGE --------------------
 export default function ProfilePage() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
-    const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -238,13 +261,10 @@ export default function ProfilePage() {
                         photoUrl: data.photoUrl,
                     });
                 } else {
-                    setProfile({
-                        email: firebaseUser.email ?? undefined,
-                    });
+                    setProfile({ email: firebaseUser.email ?? undefined });
                 }
             } catch (err: unknown) {
-                const message = err instanceof Error ? err.message : "Impossible de recuperer vos informations.";
-                setError(message);
+                setError(err instanceof Error ? err.message : "Impossible de récupérer vos informations.");
             } finally {
                 setLoading(false);
             }
@@ -257,24 +277,18 @@ export default function ProfilePage() {
         router.push("/connexion");
     };
 
-    const handleChoosePhoto = () => {
-        fileInputRef.current?.click();
-    };
+    const handleChoosePhoto = () => fileInputRef.current?.click();
 
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (!file || !userId) return;
 
         setUploadingPhoto(true);
-        setError(null);
-
         try {
-            // On prépare les données à envoyer à Cloudinary
             const formData = new FormData();
             formData.append("file", file);
-            formData.append("upload_preset", "user_profile_photos"); // ton upload preset ici
+            formData.append("upload_preset", "user_profile_photos");
 
-            // Envoi vers Cloudinary
             const response = await fetch("https://api.cloudinary.com/v1_1/dvadrpdws/image/upload", {
                 method: "POST",
                 body: formData,
@@ -283,62 +297,43 @@ export default function ProfilePage() {
             const data = await response.json();
 
             if (data.secure_url) {
-                // On met à jour la photo dans Firestore (ou un autre backend si tu veux)
                 await updateDoc(doc(db, "users", userId), {
                     photoUrl: data.secure_url,
                     updatedAt: serverTimestamp(),
                 });
-
                 setProfile((prev) => (prev ? { ...prev, photoUrl: data.secure_url } : prev));
             } else {
-                throw new Error("Erreur lors du téléversement Cloudinary.");
+                throw new Error("Erreur lors de l'upload.");
             }
 
             if (fileInputRef.current) fileInputRef.current.value = "";
         } catch (err: unknown) {
-            console.error("Erreur upload Cloudinary:", err);
-            const message = err instanceof Error ? err.message : "Impossible de mettre à jour la photo.";
-            setError(message);
+            console.error(err);
+            setError(err instanceof Error ? err.message : "Impossible de mettre à jour la photo.");
         } finally {
             setUploadingPhoto(false);
         }
     };
 
-
-    if (loading) {
-        return (
-            <div>
-                <Nav />
-                <div className="flex min-h-[60vh] items-center justify-center text-[#39393A]">
-                    Chargement de votre profil...
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div>
-                <Nav />
-                <div className="mx-auto mt-12 max-w-lg rounded-xl border border-red-200 bg-red-50 px-6 py-5 text-red-700">
-                    {error}
-                </div>
-            </div>
-        );
-    }
-
-    if (!profile) return null;
+    if (loading) return <Nav photoUrl={profile?.photoUrl} />;
 
     return (
         <div>
-            <Nav />
+            <Nav photoUrl={profile?.photoUrl} />
+            {error && (
+                <div className="mx-auto mt-12 max-w-lg rounded-xl border border-red-200 bg-red-50 px-6 py-5 text-red-700">
+                    {error}
+                </div>
+            )}
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-            <ProfileCard
-                profile={profile}
-                onRequestPhoto={handleChoosePhoto}
-                uploadingPhoto={uploadingPhoto}
-                onLogout={handleLogout}
-            />
+            {profile && (
+                <ProfileCard
+                    profile={profile}
+                    onRequestPhoto={handleChoosePhoto}
+                    uploadingPhoto={uploadingPhoto}
+                    onLogout={handleLogout}
+                />
+            )}
         </div>
     );
 }
