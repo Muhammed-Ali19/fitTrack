@@ -15,6 +15,7 @@ import "./globals.css"; // Assurez-vous d'avoir les styles globaux
 import { auth, db } from "@/firebaseClient";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import AnimatedBackground from "./components/AnimatedBackground";
 
 type SyncFeedback = { type: "success" | "error" | "info"; message: string };
 
@@ -348,10 +349,10 @@ export default function FitTrackHome() {
             {syncFeedback && (
               <p
                 className={`mt-3 text-sm ${syncFeedback.type === "success"
-                    ? "text-green-600"
-                    : syncFeedback.type === "error"
-                      ? "text-red-600"
-                      : "text-[#333333]"
+                  ? "text-green-600"
+                  : syncFeedback.type === "error"
+                    ? "text-red-600"
+                    : "text-[#333333]"
                   }`}
               >
                 {syncFeedback.message}
@@ -459,12 +460,5 @@ export default function FitTrackHome() {
   );
 }
 
-function AnimatedBackground() {
-  return (
-    <div
-      aria-hidden
-      className="pattern-container fixed top-0 left-0 w-screen h-screen -z-10"
-    />
-  );
-}
+
 

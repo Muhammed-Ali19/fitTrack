@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import "./uiverse-theme.css"; // le fichier CSS juste en dessous
+import "../uiverse-theme.css"; // le fichier CSS juste en dessous
 
 export default function PatternBackground() {
     return (
