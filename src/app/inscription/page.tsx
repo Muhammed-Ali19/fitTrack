@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Nav from "../components/Nav";
 import { auth, db } from "@/firebaseClient";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { OAuthProvider, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 
 export default function InscriptionPage() {
@@ -63,6 +63,41 @@ export default function InscriptionPage() {
             setLoading(false);
         }
     };
+
+    const upsertUserDoc = async (uid: string, emailVal?: string, extra?: Record<string, unknown>) => {
+        const userDoc = doc(db, "users", uid);
+        await setDoc(userDoc, {
+            firstName,
+            lastName,
+            email: emailVal ?? email,
+            birthDate,
+            heightCm: Number(heightCm) || null,
+            sex: "Other",
+            training: { sessionsPerWeek: 3, planType: "UPPER_LOWER" },
+            nutrition: { goalCode: "GET_BACK_IN_SHAPE", activityFactor: 1.4, targetDeltaKcal: 0, maintenanceKcal: null, targetKcal: null },
+            photoUrl: null,
+            createdAt: serverTimestamp(),
+            ...extra,
+        }, { merge: true });
+    };
+
+    const handleGoogle = async () => {
+        setError(null);
+        setLoading(true);
+        try {
+            const provider = new GoogleAuthProvider();
+            const cred = await signInWithPopup(auth, provider);
+            await upsertUserDoc(cred.user.uid, cred.user.email || undefined, {});
+            router.push("/profil");
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Google: échec d'inscription.";
+            setError(message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
 
     return (
         <>
@@ -180,8 +215,15 @@ export default function InscriptionPage() {
 
                             <button type="submit" style={{ backgroundColor: "#FCAB10" }} className="mt-6 w-full rounded-md  px-4 py-2 text-white font-semibold hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
                                 {loading ? "Inscription en cours..." : "S'inscrire"}
-                     </button>
-                                   <a href="/connexion">Vous avez deja un compte ? Connectez-vous</a>
+                            </button>
+                            <div className="mt-4 grid grid-cols-1 gap-3">
+                                <button type="button" onClick={handleGoogle} className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    Continuer avec Google
+                                </button>
+
+                            </div>
+                            <br></br>
+                            <a href="/connexion">Vous avez deja un compte ? Connectez-vous</a>
                         </form>
                     </section>
 

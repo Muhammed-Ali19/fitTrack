@@ -27,9 +27,6 @@ const Nav = () => {
                         <li>
                             <Link href="/programme" className="nav-link bg-[#FCAB10">Programme</Link>
                         </li>
-                        <li>
-                            <Link href="/connexion" className="nav-link" >Connexion</Link >
-                        </li>
                     </ul>
                 </div>
             </nav>
