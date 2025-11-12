@@ -8,15 +8,61 @@
 //  - Erreur: #FF3D00
 //  - Validation: #4CAF50
 "use client";
-import React, { useMemo, useState } from "react";
-import Link from "next/link"; // Assurez-vous d'avoir installé next/link
+import React, { useEffect, useMemo, useState } from "react";
 import Nav from "./components/Nav"; // <-- import du composant Nav
 import Footer from "./components/Footer"; // <-- import du composant Footer
 import "./globals.css"; // Assurez-vous d'avoir les styles globaux
+import { auth, db } from "@/firebaseClient";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+
+type SyncFeedback = { type: "success" | "error" | "info"; message: string };
+
+const MIN_CALORIE_GOAL = 1200;
+
+function computeAgeFromBirthDate(birthDate?: string): number | null {
+  if (!birthDate) return null;
+  const parsed = new Date(`${birthDate}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - parsed.getFullYear();
+  const monthDiff = today.getMonth() - parsed.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < parsed.getDate())) {
+    age -= 1;
+  }
+  return Math.max(0, age);
+}
+
+function resolveDeltaFromBmi(bmiValue: number): number {
+  if (bmiValue < 18.5) return 300;
+  if (bmiValue < 25) return 0;
+  if (bmiValue < 30) return -300;
+  return -500;
+}
 
 
 type UserProfile = {
-  photoUrl?: string;
+  heightCm?: number;
+  weightKg?: number;
+  birthDate?: string;
+  sex?: "M" | "F" | "Other" | "T-MAX 530";
+  nutrition?: {
+    activityFactor?: number;
+    targetKcal?: number;
+    maintenanceKcal?: number;
+    targetDeltaKcal?: number;
+  };
+  hydration?: {
+    targetLiters?: number;
+  };
+  metrics?: {
+    lastBmi?: number;
+    lastBmr?: number;
+    lastTdee?: number;
+    lastBodyFatPct?: number;
+    lastWaterIntakeL?: number;
+    lastUpdatedAt?: unknown;
+  };
 };
 
 export default function FitTrackHome() {
@@ -30,6 +76,68 @@ export default function FitTrackHome() {
   const [bmr, setBmr] = useState<number | null>(null);
   const [tdee, setTdee] = useState<number | null>(null);
   const [bodyFat, setBodyFat] = useState<number | null>(null);
+  const [targetCalories, setTargetCalories] = useState<number | null>(null);
+  const [targetAdjustment, setTargetAdjustment] = useState<number | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [syncFeedback, setSyncFeedback] = useState<SyncFeedback | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (!firebaseUser) {
+        setUserId(null);
+        setSyncFeedback({
+          type: "info",
+          message: "Connectez-vous pour enregistrer votre IMC et vos objectifs dans le cloud.",
+        });
+        return;
+      }
+      setUserId(firebaseUser.uid);
+      setSyncFeedback(null);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const snapshot = await getDoc(doc(db, "users", userId));
+        if (!snapshot.exists() || !isMounted) return;
+        const data = snapshot.data() as UserProfile;
+        if (typeof data.heightCm === "number") setHeight(data.heightCm);
+        if (typeof data.weightKg === "number") setWeight(data.weightKg);
+        const derivedAge = computeAgeFromBirthDate(data.birthDate);
+        if (derivedAge !== null) setAge(derivedAge);
+        if (typeof data.nutrition?.activityFactor === "number") setActivity(data.nutrition.activityFactor);
+        if (typeof data.nutrition?.targetKcal === "number") setTargetCalories(Math.round(data.nutrition.targetKcal));
+        if (typeof data.nutrition?.targetDeltaKcal === "number") setTargetAdjustment(data.nutrition.targetDeltaKcal);
+        const hydrationTarget = data.hydration?.targetLiters;
+        const lastWaterEstimate = data.metrics?.lastWaterIntakeL;
+        if (typeof hydrationTarget === "number") {
+          setWaterL(Number(hydrationTarget.toFixed(2)));
+        } else if (typeof lastWaterEstimate === "number") {
+          setWaterL(Number(lastWaterEstimate.toFixed(2)));
+        }
+        if (data.sex === "F") setSex("femme");
+        if (data.sex === "M") setSex("homme");
+      } catch (error) {
+        console.error("Erreur lors du chargement du profil:", error);
+        if (isMounted) {
+          setSyncFeedback({
+            type: "error",
+            message: "Impossible de récupérer vos données de profil Firebase.",
+          });
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
 
   const category = useMemo(() => {
     if (bmi == null) return null;
@@ -39,9 +147,16 @@ export default function FitTrackHome() {
     return { label: "Obésité", color: "text-[#FF3D00]" };
   }, [bmi]);
 
-  const onCalc = (e: React.FormEvent) => {
+  const onCalc = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!height || !weight) return;
+    setSyncFeedback(null);
+    if (!height || !weight) {
+      setSyncFeedback({
+        type: "error",
+        message: "Merci de renseigner votre taille et votre poids avant de calculer votre IMC.",
+      });
+      return;
+    }
     const h = Number(height) / 100;
     const val = Number(weight) / (h * h);
     const bmiLocal = Number(val.toFixed(1));
@@ -54,17 +169,77 @@ export default function FitTrackHome() {
     // BMR: Mifflin-St Jeor
     const base = 10 * Number(weight) + 6.25 * Number(height) - 5 * Number(age);
     const bmrLocal = sex === "homme" ? base + 5 : base - 161;
-    setBmr(Math.round(bmrLocal));
+    const roundedBmr = Math.round(bmrLocal);
+    setBmr(roundedBmr);
 
     // TDEE
     const tdeeLocal = bmrLocal * Number(activity || 1.2);
-    setTdee(Math.round(tdeeLocal));
+    const maintenanceKcal = Math.round(tdeeLocal);
+    setTdee(maintenanceKcal);
 
     // % Masse grasse (Deurenberg)
-    const bfLocal = sex === "homme"
-      ? 1.2 * bmiLocal + 0.23 * Number(age) - 16.2
-      : 1.2 * bmiLocal + 0.23 * Number(age) - 5.4;
-    setBodyFat(Number(bfLocal.toFixed(1)));
+    const bfLocal =
+      sex === "homme"
+        ? 1.2 * bmiLocal + 0.23 * Number(age) - 16.2
+        : 1.2 * bmiLocal + 0.23 * Number(age) - 5.4;
+    const formattedBodyFat = Number(bfLocal.toFixed(1));
+    setBodyFat(formattedBodyFat);
+
+    const targetDeltaLocal = resolveDeltaFromBmi(bmiLocal);
+    const recommendedCalories = Math.max(MIN_CALORIE_GOAL, maintenanceKcal + targetDeltaLocal);
+    setTargetCalories(recommendedCalories);
+    setTargetAdjustment(targetDeltaLocal);
+
+    if (!userId) {
+      setSyncFeedback({
+        type: "info",
+        message: "Connectez-vous pour enregistrer ces recommandations et les retrouver dans votre suivi alimentation.",
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await setDoc(
+        doc(db, "users", userId),
+        {
+          heightCm: Number(height),
+          weightKg: Number(weight),
+          sex: sex === "homme" ? "M" : "F",
+          nutrition: {
+            activityFactor: Number(activity),
+            maintenanceKcal,
+            targetDeltaKcal: targetDeltaLocal,
+            targetKcal: recommendedCalories,
+          },
+          hydration: {
+            targetLiters: water,
+            updatedAt: serverTimestamp(),
+          },
+          metrics: {
+            lastBmi: bmiLocal,
+            lastBmr: roundedBmr,
+            lastTdee: maintenanceKcal,
+            lastBodyFatPct: formattedBodyFat,
+            lastWaterIntakeL: water,
+            lastUpdatedAt: serverTimestamp(),
+          },
+        },
+        { merge: true }
+      );
+      setSyncFeedback({
+        type: "success",
+        message: "Objectifs calorique et hydratation mis à jour dans votre profil Firestore.",
+      });
+    } catch (error) {
+      console.error("Erreur Firestore (onCalc):", error);
+      setSyncFeedback({
+        type: "error",
+        message: "Impossible d'enregistrer vos résultats pour le moment. Réessayez plus tard.",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
 
@@ -156,10 +331,24 @@ export default function FitTrackHome() {
 
             <button
               type="submit"
-              className="mt-2 inline-flex h-12 items-center justify-center rounded-xl bg-[#FCAB10] px-6 text-base font-semibold text-[#F5F5F5] shadow hover:brightness-95 active:translate-y-px active:shadow-sm"
+              disabled={saving}
+              className="mt-2 inline-flex h-12 items-center justify-center rounded-xl bg-[#FCAB10] px-6 text-base font-semibold text-[#F5F5F5] shadow hover:brightness-95 active:translate-y-px active:shadow-sm disabled:opacity-60"
             >
-              Calculer
+              {saving ? "Sauvegarde..." : "Calculer"}
             </button>
+            {syncFeedback && (
+              <p
+                className={`mt-3 text-sm ${
+                  syncFeedback.type === "success"
+                    ? "text-green-600"
+                    : syncFeedback.type === "error"
+                    ? "text-red-600"
+                    : "text-[#333333]"
+                }`}
+              >
+                {syncFeedback.message}
+              </p>
+            )}
           </div>
 
           {bmi !== null && (
@@ -208,6 +397,21 @@ export default function FitTrackHome() {
                     <p className="text-sm font-medium text-[#39393A]">⚡ TDEE (dépense énergétique totale)</p>
                     <p className="mt-1 text-lg font-semibold text-[#39393A]">≈ {tdee} kcal/jour</p>
                     <p className="text-xs text-[#333333]/70 mt-1">TDEE = BMR × facteur d’activité. Inclut mouvements quotidiens et activité physique.</p>
+                  </div>
+                )}
+                {targetCalories !== null && (
+                  <div className="rounded-lg bg-white p-3 border border-black/5">
+                    <p className="text-sm font-medium text-[#39393A]">🎯 Objectif calorique quotidien</p>
+                    <p className="mt-1 text-lg font-semibold text-[#39393A]">🔥 {targetCalories} kcal/jour</p>
+                    {targetAdjustment !== null && (
+                      <p className="text-xs text-[#333333]/70 mt-1">
+                        {targetAdjustment > 0
+                          ? `+${targetAdjustment} kcal pour encourager une légère prise de masse.`
+                          : targetAdjustment < 0
+                          ? `${targetAdjustment} kcal pour créer un déficit modéré.`
+                          : "Objectif de maintien basé sur votre TDEE."}
+                      </p>
+                    )}
                   </div>
                 )}
                 {bodyFat !== null && (

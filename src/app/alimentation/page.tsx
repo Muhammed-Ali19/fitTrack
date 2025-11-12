@@ -9,6 +9,7 @@ import {
     collection,
     deleteDoc,
     doc,
+    getDoc,
     getDocs,
     serverTimestamp,
     setDoc,
@@ -63,6 +64,10 @@ export default function AlimentationPage() {
     const [userId, setUserId] = useState<string | null>(null);
     const [mealsLoading, setMealsLoading] = useState(true);
     const [dbError, setDbError] = useState<string | null>(null);
+    const [dailyCalorieGoal, setDailyCalorieGoal] = useState<number | null>(null);
+    const [dailyWaterGoal, setDailyWaterGoal] = useState<number | null>(null);
+    const [goalLoading, setGoalLoading] = useState(false);
+    const [goalError, setGoalError] = useState<string | null>(null);
 
     const router = useRouter();
     const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -123,6 +128,62 @@ export default function AlimentationPage() {
         return () => unsubscribe();
     }, [router]);
 
+    useEffect(() => {
+        if (!userId) {
+            setDailyCalorieGoal(null);
+            setDailyWaterGoal(null);
+            setGoalError(null);
+            setGoalLoading(false);
+            return;
+        }
+
+        let isMounted = true;
+        setGoalLoading(true);
+        setGoalError(null);
+
+        (async () => {
+            try {
+                const snapshot = await getDoc(doc(db, "users", userId));
+                if (!snapshot.exists() || !isMounted) {
+                    if (isMounted) setDailyCalorieGoal(null);
+                    return;
+                }
+                const data = snapshot.data() as {
+                    nutrition?: { targetKcal?: number; maintenanceKcal?: number };
+                    hydration?: { targetLiters?: number };
+                    metrics?: { lastWaterIntakeL?: number };
+                };
+                const resolvedGoal =
+                    typeof data.nutrition?.targetKcal === "number"
+                        ? Math.round(data.nutrition.targetKcal)
+                        : typeof data.nutrition?.maintenanceKcal === "number"
+                        ? Math.round(data.nutrition.maintenanceKcal)
+                        : null;
+                const hydrationTarget = data.hydration?.targetLiters;
+                const lastWaterEstimate = data.metrics?.lastWaterIntakeL;
+                const resolvedWaterGoal =
+                    typeof hydrationTarget === "number"
+                        ? Number(hydrationTarget.toFixed(2))
+                        : typeof lastWaterEstimate === "number"
+                        ? Number(lastWaterEstimate.toFixed(2))
+                        : null;
+                if (isMounted) {
+                    setDailyCalorieGoal(resolvedGoal);
+                    setDailyWaterGoal(resolvedWaterGoal);
+                }
+            } catch (error) {
+                console.error("Erreur chargement objectif calorique:", error);
+                if (isMounted) setGoalError("Impossible de récupérer votre objectif journalier.");
+            } finally {
+                if (isMounted) setGoalLoading(false);
+            }
+        })();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [userId]);
+
     // --- Suivi du changement de journée ---
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -176,6 +237,14 @@ export default function AlimentationPage() {
         );
     }, [meal]);
 
+    const calorieGoalProgress = useMemo(() => {
+        if (!dailyCalorieGoal || dailyCalorieGoal <= 0) return 0;
+        return Math.min(100, Math.round((totals.calories / dailyCalorieGoal) * 100));
+    }, [dailyCalorieGoal, totals.calories]);
+
+    const caloriesRemaining =
+        dailyCalorieGoal != null ? Math.max(dailyCalorieGoal - totals.calories, 0) : null;
+
     useEffect(() => {
         writeDailyMeals(meal);
         if (!userId) return;
@@ -183,6 +252,8 @@ export default function AlimentationPage() {
             doc(db, "users", userId, "foodLogs", currentDay),
             {
                 totalKcal: totals.calories,
+                goalKcal: dailyCalorieGoal ?? null,
+                goalWaterL: dailyWaterGoal ?? null,
                 totals: {
                     protein_g: totals.protein_g,
                     carbs_g: totals.carbs_g,
@@ -196,7 +267,7 @@ export default function AlimentationPage() {
             },
             { merge: true }
         ).catch((err) => console.error("Erreur lors de la mise à jour des totaux Firestore :", err));
-    }, [meal, totals, userId, currentDay]);
+    }, [meal, totals, userId, currentDay, dailyCalorieGoal, dailyWaterGoal]);
 
 
 
@@ -296,6 +367,66 @@ export default function AlimentationPage() {
                         <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                             {dbError}
                         </div>
+                    )}
+                    {goalError && (
+                        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {goalError}
+                        </div>
+                    )}
+                    {goalLoading ? (
+                        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+                            {[0, 1].map((key) => (
+                                <div
+                                    key={key}
+                                    className="h-28 rounded-2xl border border-black/5 bg-white/60 shadow-inner animate-pulse"
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        (dailyCalorieGoal !== null || dailyWaterGoal !== null) && (
+                            <div className="mb-6 grid gap-4 sm:grid-cols-2">
+                                {dailyCalorieGoal !== null && (
+                                    <section className="rounded-2xl border border-black/5 bg-white p-5 shadow-md shadow-black/5">
+                                        <div className="flex flex-col gap-4">
+                                            <div>
+                                                <p className="text-sm font-medium text-[#39393A]">🎯 Objectif calories</p>
+                                                <p className="text-2xl font-bold text-[#39393A]">{dailyCalorieGoal} kcal</p>
+                                                <p className="text-xs text-[#333333]/70">
+                                                    {caloriesRemaining != null
+                                                        ? caloriesRemaining > 0
+                                                            ? `${Math.round(caloriesRemaining)} kcal restants aujourd'hui.`
+                                                            : "Objectif atteint pour la journée, bravo !"
+                                                        : "Objectif basé sur votre dernier calcul IMC."}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <div className="mb-1 flex items-center justify-between text-xs text-[#333333]/70">
+                                                    <span>Consommé</span>
+                                                    <span>
+                                                        {Math.round(totals.calories)} / {dailyCalorieGoal} kcal
+                                                    </span>
+                                                </div>
+                                                <div className="h-3 w-full overflow-hidden rounded-full bg-black/10">
+                                                    <div
+                                                        className="h-full rounded-full bg-[#FCAB10] transition-[width] duration-300"
+                                                        style={{ width: `${calorieGoalProgress}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+                                )}
+                                {dailyWaterGoal !== null && (
+                                    <section className="rounded-2xl border border-black/5 bg-white p-5 shadow-md shadow-black/5">
+                                        <p className="text-sm font-medium text-[#39393A]">💧 Objectif hydratation</p>
+                                        <p className="text-2xl font-bold text-[#39393A]">{dailyWaterGoal} L / jour</p>
+                                        <p className="text-xs text-[#333333]/70">
+                                            Basé sur votre dernier calcul IMC (≈ 3% de votre poids). Recalculez votre IMC pour mettre à jour cette estimation.
+                                        </p>
+                                    </section>
+                                )}
+                            </div>
+                        )
                     )}
 
                     {/* Tabs */}

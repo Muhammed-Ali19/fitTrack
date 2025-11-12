@@ -14,6 +14,7 @@ export default function InscriptionPage() {
     const [lastName, setLastName] = useState("");
     const [birthDate, setBirthDate] = useState("");
     const [heightCm, setHeightCm] = useState("");
+    const [weightKg, setWeightKg] = useState("");
     const [sex, setSex] = useState<"M" | "F" | "Other" | "T-MAX 530">("Other");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -32,6 +33,10 @@ export default function InscriptionPage() {
             if (!Number.isFinite(parsedHeight) || parsedHeight <= 0) {
                 throw new Error("Merci de saisir une taille valide.");
             }
+            const parsedWeight = Number(weightKg);
+            if (!Number.isFinite(parsedWeight) || parsedWeight <= 0) {
+                throw new Error("Merci de saisir un poids valide.");
+            }
             const credential = await createUserWithEmailAndPassword(auth, email, password);
             const userDoc = doc(db, "users", credential.user.uid);
             await setDoc(userDoc, {
@@ -40,6 +45,7 @@ export default function InscriptionPage() {
                 email,
                 birthDate,
                 heightCm: parsedHeight,
+                weightKg: parsedWeight,
                 sex,
                 training: {
                     sessionsPerWeek: 3,
@@ -74,6 +80,7 @@ export default function InscriptionPage() {
                 email: emailVal ?? email,
                 birthDate,
                 heightCm: Number(heightCm) || null,
+                weightKg: Number(weightKg) || null,
                 sex: "Other",
                 training: { sessionsPerWeek: 3, planType: "UPPER_LOWER" },
                 nutrition: {
@@ -187,6 +194,18 @@ export default function InscriptionPage() {
                                 id="height"
                                 value={heightCm}
                                 onChange={(e) => setHeightCm(e.target.value)}
+                                className="mb-4 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                required
+                            />
+
+                            <label className="mb-2 font-medium text-gray-700" htmlFor="weight">
+                                Poids (kg)
+                            </label>
+                            <input
+                                type="number"
+                                id="weight"
+                                value={weightKg}
+                                onChange={(e) => setWeightKg(e.target.value)}
                                 className="mb-4 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                                 required
                             />
