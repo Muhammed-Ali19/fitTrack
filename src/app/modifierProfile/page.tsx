@@ -17,7 +17,7 @@ type FormState = {
   firstName: string;
   lastName: string;
   email: string;
-  sex: "M" | "F" | "Other";
+  sex: "M" | "F" | "Other" | "T-MAX 530";
   birthDate: string;
   heightCm: string;
   trainingSessionsPerWeek: number;
@@ -312,6 +312,7 @@ export default function ModifierProfilePage() {
                 { label: "Homme", value: "M" },
                 { label: "Femme", value: "F" },
                 { label: "Autre", value: "Other" },
+                { label: "T-MAX 530", value: "T-MAX 530" },
               ]}
             />
             <Field

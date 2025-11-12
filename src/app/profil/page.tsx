@@ -15,7 +15,7 @@ type UserProfile = {
     birthDate?: string;
     heightCm?: number;
     photoUrl?: string;
-    sex?: "M" | "F" | "Other";
+    sex?: "M" | "F" | "Other" | "T-MAX 530";
     training?: {
         sessionsPerWeek?: number;
         planType?: string;
@@ -74,6 +74,8 @@ const ProfileCard: React.FC<{
                 return "Femme";
             case "Other":
                 return "Autre";
+            case "T-MAX 530":
+                return "T-MAX 530";
             default:
                 return "Non renseigne";
         }
