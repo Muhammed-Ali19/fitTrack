@@ -1,0 +1,10 @@
+.pattern-container {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 10% 10%, #39393A 5%, transparent 5%),
+        radial-gradient(circle at 90% 10%, #39393A 5%, transparent 5%),
+        radial-gradient(circle at 90% 90%, #39393A 5%, transparent 5%),
+        radial-gradient(circle at 10% 90%, #39393A 5%, transparent 5%);
+    background-size: 20px 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}

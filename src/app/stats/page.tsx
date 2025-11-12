@@ -18,6 +18,7 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { useRouter } from "next/navigation";
+import PatternBackground from "../components/PatternV2";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -134,11 +135,12 @@ export default function StatsPage() {
         weightChange < 0 ? "text-green-600" : weightChange > 0 ? "text-red-600" : "text-gray-500";
 
     return (
-        <div className="min-h-screen bg-[#F5F5F5] font-sans text-[#333333]">
+        <div className="min-h-screen font-sans text-[#333333] ">
             <Nav photoUrl={profile?.photoUrl} />
+            <PatternBackground />
 
-            <main className="min-h-screen flex flex-col items-center p-8">
-                <div className="w-full max-w-4xl">
+            <main className="min-h-screen flex flex-col items-center p-8 ">
+                <div className="w-full max-w-4xl bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-md border border-black/5 mb-6">
                     <h1 className="text-4xl font-extrabold text-[#39393A] mb-6">
                         Statistiques de {profile?.firstName || "l'utilisateur"}
                     </h1>
@@ -201,9 +203,9 @@ export default function StatsPage() {
                         </p>
                     </section>
                 </div>
-            </main>
+            </main >
 
             <Footer />
-        </div>
+        </div >
     );
 }

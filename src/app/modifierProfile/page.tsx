@@ -6,7 +6,8 @@ import Nav from "../components/Nav";
 import { auth, db, storage } from "@/firebaseClient";
 import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage"; ``
+import PatternBackground from "../components/PatternV2";
 
 type TrainingPlanType = "FULL_BODY" | "UPPER_LOWER" | "SPLIT_4" | "PPL";
 type GoalCode = "MASS_GAIN" | "MUSCLE_MAINTAIN" | "CUTTING" | "GET_BACK_IN_SHAPE";
@@ -188,13 +189,14 @@ export default function ModifierProfilePage() {
     return Number.isFinite(value) && value > 0 ? `${(value / 100).toFixed(2)} m` : null;
   }, [form.heightCm]);
 
-  if (loading) return <div><Nav /><div className="flex min-h-[60vh] items-center justify-center">Chargement du profil...</div></div>;
+  if (loading) return <div><Nav /> <PatternBackground /><div className="flex min-h-[60vh] items-center justify-center">Chargement du profil...</div></div>;
 
   // -------------------- JSX --------------------
   return (
-    <div className="bg-[#F5F5F5] min-h-screen text-[#333333]">
+    <div className=" min-h-screen text-[#333333]">
       <Nav />
-      <main className="mx-auto mt-10 w-[min(900px,92%)] rounded-3xl border border-black/5 bg-white/90 p-8 shadow-lg shadow-black/5 backdrop-blur">
+      <PatternBackground />
+      <main className="mx-auto mt-10 w-[min(900px,92%)] rounded-3xl border border-black/5 bg-white/90 p-8 shadow-lg shadow-black/5 backdrop-blur bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-md border border-black/5 mb-6">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-extrabold text-[#39393A]">Modifier le profil</h1>
@@ -285,7 +287,7 @@ export default function ModifierProfilePage() {
           </div>
         </form>
       </main>
-    </div>
+    </div >
   );
 }
 

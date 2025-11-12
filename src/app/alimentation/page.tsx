@@ -16,6 +16,7 @@ import {
     writeBatch,
 } from "firebase/firestore";
 import { ensureDailyMealsFresh, getCurrentDayKey, readDailyMeals, writeDailyMeals } from "@/lib/dailyMealStorage";
+import PatternBackground from "../components/PatternV2";
 
 type NutritionItem = {
     name: string;
@@ -157,16 +158,16 @@ export default function AlimentationPage() {
                     typeof data.nutrition?.targetKcal === "number"
                         ? Math.round(data.nutrition.targetKcal)
                         : typeof data.nutrition?.maintenanceKcal === "number"
-                        ? Math.round(data.nutrition.maintenanceKcal)
-                        : null;
+                            ? Math.round(data.nutrition.maintenanceKcal)
+                            : null;
                 const hydrationTarget = data.hydration?.targetLiters;
                 const lastWaterEstimate = data.metrics?.lastWaterIntakeL;
                 const resolvedWaterGoal =
                     typeof hydrationTarget === "number"
                         ? Number(hydrationTarget.toFixed(2))
                         : typeof lastWaterEstimate === "number"
-                        ? Number(lastWaterEstimate.toFixed(2))
-                        : null;
+                            ? Number(lastWaterEstimate.toFixed(2))
+                            : null;
                 if (isMounted) {
                     setDailyCalorieGoal(resolvedGoal);
                     setDailyWaterGoal(resolvedWaterGoal);
@@ -355,10 +356,11 @@ export default function AlimentationPage() {
 
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-[#F5F5F5] font-sans text-[#333333]">
+        <div className="relative min-h-screen overflow-hidden  font-sans text-[#333333]">
             <Nav />
+            <PatternBackground />
             <main className="min-h-screen flex flex-col items-center p-8">
-                <div className="w-full max-w-6xl">
+                <div className="w-full max-w-6xl bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-md border border-black/5 mb-6">
                     <header className="mb-6">
                         <h1 className="text-4xl font-extrabold text-[#39393A]">Alimentation</h1>
                         <p className="mt-2 text-[#333]/80">Recherche, construction de repas et suivi macros via CalorieNinjas.</p>
@@ -629,8 +631,8 @@ export default function AlimentationPage() {
                         </section>
                     )}
                 </div>
-            </main>
+            </main >
             <Footer />
-        </div>
+        </div >
     );
 }

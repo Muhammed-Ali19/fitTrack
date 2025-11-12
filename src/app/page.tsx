@@ -15,7 +15,7 @@ import "./globals.css"; // Assurez-vous d'avoir les styles globaux
 import { auth, db } from "@/firebaseClient";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import AnimatedBackground from "./components/AnimatedBackground";
+import PatternBackground from "./components/PatternV2";
 
 type SyncFeedback = { type: "success" | "error" | "info"; message: string };
 
@@ -253,7 +253,7 @@ export default function FitTrackHome() {
 
 
       <Nav />
-      <AnimatedBackground />
+      <PatternBackground />
 
 
 

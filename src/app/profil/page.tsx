@@ -6,6 +6,7 @@ import { auth, db } from "@/firebaseClient";
 import { getStoredDailyCalories, MEAL_DAY_KEY, MEAL_STORAGE_KEY } from "@/lib/dailyMealStorage";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import PatternBackground from "../components/PatternV2";
 
 type UserProfile = {
     firstName?: string;
@@ -298,6 +299,8 @@ export default function ProfilePage() {
     return (
         <div>
             <Nav photoUrl={profile?.photoUrl} />
+            <PatternBackground />
+
             {error && <div className="mx-auto mt-12 max-w-lg rounded-xl border border-red-200 bg-red-50 px-6 py-5 text-red-700">{error}</div>}
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             {profile && (
