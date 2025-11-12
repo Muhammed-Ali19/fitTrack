@@ -96,23 +96,7 @@ export default function InscriptionPage() {
         }
     };
 
-    const handleApple = async () => {
-        setError(null);
-        setLoading(true);
-        try {
-            const provider = new OAuthProvider('apple.com');
-            provider.addScope('name');
-            provider.addScope('email');
-            const cred = await signInWithPopup(auth, provider);
-            await upsertUserDoc(cred.user.uid, cred.user.email || undefined, {});
-            router.push("/profil");
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Apple: échec d'inscription.";
-            setError(message);
-        } finally {
-            setLoading(false);
-        }
-    };
+
 
     return (
         <>
@@ -220,10 +204,9 @@ export default function InscriptionPage() {
                                 <button type="button" onClick={handleGoogle} className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                                     Continuer avec Google
                                 </button>
-                                <button type="button" onClick={handleApple} className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                    Continuer avec Apple
-                                </button>
+
                             </div>
+                            <br></br>
                             <a href="/connexion">Vous avez deja un compte ? Connectez-vous</a>
                         </form>
                     </section>
