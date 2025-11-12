@@ -14,6 +14,11 @@ import Nav from "./components/Nav"; // <-- import du composant Nav
 import Footer from "./components/Footer"; // <-- import du composant Footer
 import "./globals.css"; // Assurez-vous d'avoir les styles globaux
 
+
+type UserProfile = {
+  photoUrl?: string;
+};
+
 export default function FitTrackHome() {
   const [height, setHeight] = useState(0);
   const [weight, setWeight] = useState(0);
