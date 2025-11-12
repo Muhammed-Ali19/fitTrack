@@ -72,6 +72,9 @@ const Nav: React.FC<NavProps> = ({ photoUrl }) => {
                         <li>
                             <Link href="/programme" className="nav-link">Programme</Link>
                         </li>
+                        <li>
+                            <Link href="/stats" className="nav-link">Mes Stats</Link>
+                        </li>
                     </ul>
 
                     {/* Avatar profil */}

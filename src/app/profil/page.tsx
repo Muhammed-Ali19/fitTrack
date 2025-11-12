@@ -13,6 +13,7 @@ type UserProfile = {
     email?: string;
     birthDate?: string;
     heightCm?: number;
+    weightKg?: number; // Poids ajouté
     photoUrl?: string;
     sex?: "M" | "F" | "Other" | "T-MAX 530";
     training?: {
@@ -29,77 +30,42 @@ type UserProfile = {
 const MEAL_REFRESH_INTERVAL = 60_000;
 
 // -------------------- NAV --------------------
-type NavProps = {
-    photoUrl?: string;
-};
+type NavProps = { photoUrl?: string };
 
-const Nav: React.FC<NavProps> = ({ photoUrl }) => {
-    return (
-        <header className="relative z-10">
-            <nav className="mx-auto mt-6 w-[90%] max-w-5xl rounded-2xl border border-black/5 bg-white/90 shadow-lg shadow-black/5 backdrop-blur">
-                <div className="flex items-center justify-between px-6 py-3">
-                    {/* Logo */}
-                    <Link href="/">
-                        <img
-                            src="/img/logo.png"
-                            alt="FitTrack Logo"
-                            style={{ width: "40px", height: "40px" }}
-                        />
-                    </Link>
-
-                    {/* Liens */}
-                    <ul className="flex items-center gap-6 text-sm font-medium">
-                        <li>
-                            <Link href="/profil" className="nav-link">
-                                Profil
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/alimentation" className="nav-link">
-                                Alimentation
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/programme" className="nav-link">
-                                Programme
-                            </Link>
-                        </li>
-                    </ul>
-
-                    {/* Avatar */}
-                    <div className="ml-4">
-                        {photoUrl ? (
-                            <img
-                                src={photoUrl}
-                                alt="Avatar"
-                                className="h-10 w-10 rounded-full object-cover border-2 border-[#FCAB10]"
-                            />
-                        ) : (
-                            <div className="h-10 w-10 rounded-full bg-[#FCAB10] grid place-items-center text-white font-bold">
-                                ?
-                            </div>
-                        )}
-                    </div>
+const Nav: React.FC<NavProps> = ({ photoUrl }) => (
+    <header className="relative z-10">
+        <nav className="mx-auto mt-6 w-[90%] max-w-5xl rounded-2xl border border-black/5 bg-white/90 shadow-lg shadow-black/5 backdrop-blur">
+            <div className="flex items-center justify-between px-6 py-3">
+                <Link href="/">
+                    <img src="/img/logo.png" alt="FitTrack Logo" style={{ width: "40px", height: "40px" }} />
+                </Link>
+                <ul className="flex items-center gap-6 text-sm font-medium">
+                    <li><Link href="/profil" className="nav-link">Profil</Link></li>
+                    <li><Link href="/alimentation" className="nav-link">Alimentation</Link></li>
+                    <li><Link href="/programme" className="nav-link">Programme</Link></li>
+                    <li><Link href="/stats" className="nav-link">Mes Stats</Link></li>
+                </ul>
+                <div className="ml-4">
+                    {photoUrl ? (
+                        <img src={photoUrl} alt="Avatar" className="h-10 w-10 rounded-full object-cover border-2 border-[#FCAB10]" />
+                    ) : (
+                        <div className="h-10 w-10 rounded-full bg-[#FCAB10] grid place-items-center text-white font-bold">?</div>
+                    )}
                 </div>
-            </nav>
-
-            <style>{`
-        .nav-link { color: #39393A; position: relative; }
-        .nav-link::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: transparent; transition: background 200ms ease; }
-        .nav-link:hover::after { background: #FCAB10; }
-      `}</style>
-        </header>
-    );
-};
+            </div>
+        </nav>
+        <style>{`
+            .nav-link { color: #39393A; position: relative; }
+            .nav-link::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: transparent; transition: background 200ms ease; }
+            .nav-link:hover::after { background: #FCAB10; }
+        `}</style>
+    </header>
+);
 
 // -------------------- AVATAR --------------------
 const Avatar: React.FC<{ photoUrl?: string }> = ({ photoUrl }) => (
     <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-[#FCAB10] grid place-items-center shadow-md ring-8 ring-white/70">
-        {photoUrl ? (
-            <img src={photoUrl} alt="Profil" className="h-full w-full object-cover" />
-        ) : (
-            <div className="text-[#39393A] text-3xl font-bold">?</div>
-        )}
+        {photoUrl ? <img src={photoUrl} alt="Profil" className="h-full w-full object-cover" /> : <div className="text-[#39393A] text-3xl font-bold">?</div>}
     </div>
 );
 
@@ -126,6 +92,7 @@ const ProfileCard: React.FC<{
     }, [profile.birthDate]);
 
     const heightDisplay = profile.heightCm != null ? `${profile.heightCm} cm` : "Non renseignée";
+    const weightDisplay = profile.weightKg != null ? `${profile.weightKg} kg` : "Non renseigné";
 
     const sexLabel = useMemo(() => {
         switch (profile.sex) {
@@ -137,9 +104,7 @@ const ProfileCard: React.FC<{
         }
     }, [profile.sex]);
 
-    const trainingSessionsDisplay = profile.training?.sessionsPerWeek
-        ? `${profile.training.sessionsPerWeek} / semaine`
-        : "Non renseigné";
+    const trainingSessionsDisplay = profile.training?.sessionsPerWeek ? `${profile.training.sessionsPerWeek} / semaine` : "Non renseigné";
 
     const trainingPlanLabel = useMemo(() => {
         switch (profile.training?.planType) {
@@ -161,17 +126,9 @@ const ProfileCard: React.FC<{
         }
     }, [profile.nutrition?.goalCode]);
 
-    const nutritionActivityDisplay =
-        profile.nutrition?.activityFactor != null
-            ? `${profile.nutrition.activityFactor}`
-            : "Non renseigné";
-
-    const targetDelta = profile.nutrition?.targetDeltaKcal ?? 0;
-    const totalDelta = Math.round(targetDelta + dailyCalories);
-    const nutritionDeltaDisplay =
-        profile.nutrition?.targetDeltaKcal != null
-            ? `${totalDelta} kcal (objectif ${profile.nutrition.targetDeltaKcal} + ${Math.round(dailyCalories)})`
-            : `${Math.round(dailyCalories)} kcal`;
+    const nutritionActivityDisplay = profile.nutrition?.activityFactor != null ? `${profile.nutrition.activityFactor}` : "Non renseigné";
+    const consumedLabel = `${Math.round(dailyCalories)} kcal consommes aujourd'hui`;
+    const nutritionDeltaDisplay = profile.nutrition?.targetDeltaKcal != null ? `Objectif: ${profile.nutrition.targetDeltaKcal} kcal - ${consumedLabel}` : consumedLabel;
 
     return (
         <section className="mx-auto w-[min(1100px,92%)] mt-10">
@@ -200,16 +157,14 @@ const ProfileCard: React.FC<{
                     <div className="rounded-2xl border border-black/5 bg-white p-5">
                         <Field label="Prénom" value={profile.firstName || "Non renseigné"} />
                         <Field label="Nom" value={profile.lastName || "Non renseigné"} />
-                        <Field
-                            label="E-mail"
-                            value={profile.email ? <a href={`mailto:${profile.email}`} className="underline">{profile.email}</a> : "Non renseigné"}
-                        />
+                        <Field label="E-mail" value={profile.email ? <a href={`mailto:${profile.email}`} className="underline">{profile.email}</a> : "Non renseigné"} />
                         <Field label="Sexe" value={sexLabel} />
                     </div>
 
                     <div className="rounded-2xl border border-black/5 bg-white p-5">
                         <Field label="Date de naissance" value={formattedBirthDate} />
                         <Field label="Taille" value={heightDisplay} />
+                        <Field label="Poids" value={weightDisplay} /> {/* Poids ajouté */}
                         <Field label="Séances / semaine" value={trainingSessionsDisplay} />
                         <Field label="Programme" value={trainingPlanLabel} />
                         <Field label="Objectif nutrition" value={nutritionGoalLabel} />
@@ -219,16 +174,10 @@ const ProfileCard: React.FC<{
                 </div>
 
                 <div className="mt-8 flex items-center justify-end gap-4">
-                    <Link
-                        href="/modifierProfile"
-                        className="inline-flex items-center gap-2 rounded-xl border border-[#FCAB10] px-5 py-3 text-[#39393A] font-semibold shadow hover:bg-[#FCAB10]/10 transition"
-                    >
+                    <Link href="/modifierProfile" className="inline-flex items-center gap-2 rounded-xl border border-[#FCAB10] px-5 py-3 text-[#39393A] font-semibold shadow hover:bg-[#FCAB10]/10 transition">
                         Modifier le profil
                     </Link>
-                    <button
-                        onClick={onLogout}
-                        className="inline-flex items-center gap-2 rounded-xl border border-[#39393A]/20 bg-white px-5 py-3 text-[#39393A] font-semibold shadow hover:bg-[#FCAB10]/10 transition"
-                    >
+                    <button onClick={onLogout} className="inline-flex items-center gap-2 rounded-xl border border-[#39393A]/20 bg-white px-5 py-3 text-[#39393A] font-semibold shadow hover:bg-[#FCAB10]/10 transition">
                         Se déconnecter
                     </button>
                 </div>
@@ -265,6 +214,7 @@ export default function ProfilePage() {
                         ...data,
                         email: firebaseUser.email ?? data.email,
                         heightCm: data.heightCm != null ? Number(data.heightCm) : undefined,
+                        weightKg: data.weightKg != null ? Number(data.weightKg) : undefined, // Poids ajouté
                         photoUrl: data.photoUrl,
                     });
                 } else {
@@ -290,13 +240,10 @@ export default function ProfilePage() {
         const intervalId = window.setInterval(refreshDailyCalories, MEAL_REFRESH_INTERVAL);
 
         const handleStorage = (event: StorageEvent) => {
-            if (event.key === MEAL_STORAGE_KEY || event.key === MEAL_DAY_KEY) {
-                refreshDailyCalories();
-            }
+            if (event.key === MEAL_STORAGE_KEY || event.key === MEAL_DAY_KEY) refreshDailyCalories();
         };
 
         window.addEventListener("storage", handleStorage);
-
         return () => {
             window.clearInterval(intervalId);
             window.removeEventListener("storage", handleStorage);
@@ -324,26 +271,18 @@ export default function ProfilePage() {
                 method: "POST",
                 body: formData,
             });
-
             const data = await response.json();
 
             if (data.secure_url) {
-                await updateDoc(doc(db, "users", userId), {
-                    photoUrl: data.secure_url,
-                    updatedAt: serverTimestamp(),
-                });
-                setProfile((prev) => (prev ? { ...prev, photoUrl: data.secure_url } : prev));
-            } else {
-                throw new Error("Erreur lors de l'upload.");
-            }
+                await updateDoc(doc(db, "users", userId), { photoUrl: data.secure_url, updatedAt: serverTimestamp() });
+                setProfile(prev => (prev ? { ...prev, photoUrl: data.secure_url } : prev));
+            } else throw new Error("Erreur lors de l'upload.");
 
             if (fileInputRef.current) fileInputRef.current.value = "";
         } catch (err: unknown) {
             console.error(err);
             setError(err instanceof Error ? err.message : "Impossible de mettre à jour la photo.");
-        } finally {
-            setUploadingPhoto(false);
-        }
+        } finally { setUploadingPhoto(false); }
     };
 
     if (loading) return <Nav photoUrl={profile?.photoUrl} />;
@@ -351,11 +290,7 @@ export default function ProfilePage() {
     return (
         <div>
             <Nav photoUrl={profile?.photoUrl} />
-            {error && (
-                <div className="mx-auto mt-12 max-w-lg rounded-xl border border-red-200 bg-red-50 px-6 py-5 text-red-700">
-                    {error}
-                </div>
-            )}
+            {error && <div className="mx-auto mt-12 max-w-lg rounded-xl border border-red-200 bg-red-50 px-6 py-5 text-red-700">{error}</div>}
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             {profile && (
                 <ProfileCard
