@@ -245,17 +245,26 @@ export default function FitTrackHome() {
 
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#F5F5F5] font-sans text-[#333333]">
+
+    <div className="relative min-h-screen overflow-hidden  font-sans text-[#333333]">
       {/* <AnimatedBackground /> */}
 
+
+
       <Nav />
+      <AnimatedBackground />
+
+
+
 
 
       {/* SECTION IMC */}
-      <main className="relative z-10 mx-auto grid w-[90%] max-w-5xl place-items-center py-16 bg-[#F5F5F5]">
-        <div className="text-center">
-          <h1 className="text-5xl font-extrabold tracking-tight text-[#39393A] sm:text-6xl">IMC</h1>
-          <p className="mx-auto mt-3 max-w-2xl text-lg text-[#333333]/80">
+      <main className="relative z-10 mx-auto grid w-[90%] max-w-5xl place-items-center py-16">
+        <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl shadow-md shadow-black/10 px-6 py-4 inline-block">
+          <h1 className="text-5xl font-extrabold tracking-tight text-[#39393A] sm:text-6xl">
+            IMC
+          </h1>
+          <p className="mx-auto mt-3 max-w-2xl text-lg text-[#333333]/90">
             Entrez votre taille et votre poids pour calculer votre IMC.
           </p>
         </div>
@@ -338,13 +347,12 @@ export default function FitTrackHome() {
             </button>
             {syncFeedback && (
               <p
-                className={`mt-3 text-sm ${
-                  syncFeedback.type === "success"
+                className={`mt-3 text-sm ${syncFeedback.type === "success"
                     ? "text-green-600"
                     : syncFeedback.type === "error"
-                    ? "text-red-600"
-                    : "text-[#333333]"
-                }`}
+                      ? "text-red-600"
+                      : "text-[#333333]"
+                  }`}
               >
                 {syncFeedback.message}
               </p>
@@ -408,8 +416,8 @@ export default function FitTrackHome() {
                         {targetAdjustment > 0
                           ? `+${targetAdjustment} kcal pour encourager une légère prise de masse.`
                           : targetAdjustment < 0
-                          ? `${targetAdjustment} kcal pour créer un déficit modéré.`
-                          : "Objectif de maintien basé sur votre TDEE."}
+                            ? `${targetAdjustment} kcal pour créer un déficit modéré.`
+                            : "Objectif de maintien basé sur votre TDEE."}
                       </p>
                     )}
                   </div>
@@ -453,12 +461,10 @@ export default function FitTrackHome() {
 
 function AnimatedBackground() {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute -top-20 -left-20 h-80 w-80 rounded-full bg-[#FCAB10]/30 blur-3xl animate-pulse" style={{ animation: "floatBlob 15s infinite alternate ease-in-out" }} />
-      <div className="absolute top-40 right-0 h-96 w-96 rounded-full bg-[#39393A]/20 blur-3xl animate-pulse" style={{ animation: "floatBlob 20s infinite alternate ease-in-out" }} />
-      <div className="absolute bottom-10 left-1/3 h-72 w-72 rounded-full bg-[#FCAB10]/20 blur-3xl animate-pulse" style={{ animation: "floatBlob 18s infinite alternate ease-in-out" }} />
-    </div>
+    <div
+      aria-hidden
+      className="pattern-container fixed top-0 left-0 w-screen h-screen -z-10"
+    />
   );
-
-
 }
+
