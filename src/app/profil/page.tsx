@@ -166,11 +166,12 @@ const ProfileCard: React.FC<{
             ? `${profile.nutrition.activityFactor}`
             : "Non renseigné";
 
-    const consumedLabel = `${Math.round(dailyCalories)} kcal consommes aujourd'hui`;
+    const targetDelta = profile.nutrition?.targetDeltaKcal ?? 0;
+    const totalDelta = Math.round(targetDelta + dailyCalories);
     const nutritionDeltaDisplay =
         profile.nutrition?.targetDeltaKcal != null
-            ? `Objectif: ${profile.nutrition.targetDeltaKcal} kcal - ${consumedLabel}`
-            : consumedLabel;
+            ? `${totalDelta} kcal (objectif ${profile.nutrition.targetDeltaKcal} + ${Math.round(dailyCalories)})`
+            : `${Math.round(dailyCalories)} kcal`;
 
     return (
         <section className="mx-auto w-[min(1100px,92%)] mt-10">

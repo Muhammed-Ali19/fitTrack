@@ -1,8 +1,20 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
-import { ensureDailyMealsFresh, readDailyMeals, writeDailyMeals } from "@/lib/dailyMealStorage";
+import { auth, db } from "@/firebaseClient";
+import { onAuthStateChanged } from "firebase/auth";
+import {
+    collection,
+    deleteDoc,
+    doc,
+    getDocs,
+    serverTimestamp,
+    setDoc,
+    writeBatch,
+} from "firebase/firestore";
+import { ensureDailyMealsFresh, getCurrentDayKey, readDailyMeals, writeDailyMeals } from "@/lib/dailyMealStorage";
 
 type NutritionItem = {
     name: string;
@@ -18,11 +30,7 @@ type NutritionItem = {
     protein_g: number;
 };
 
-type UserProfile = {
-    photoUrl?: string;
-};
-
-type MealEntry = NutritionItem & { id: string };
+type MealEntry = NutritionItem & { id: string; createdAtMs?: number };
 
 const SUGGESTIONS = [
     "pomme",
@@ -51,45 +59,91 @@ export default function AlimentationPage() {
     const [meal, setMeal] = useState<MealEntry[]>([]);
     const [history, setHistory] = useState<string[]>([]);
     const [portions, setPortions] = useState<Record<string, number>>({});
-    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [currentDay, setCurrentDay] = useState(getCurrentDayKey());
+    const [userId, setUserId] = useState<string | null>(null);
+    const [mealsLoading, setMealsLoading] = useState(true);
+    const [dbError, setDbError] = useState<string | null>(null);
 
+    const router = useRouter();
     const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+    const loadMealsFromFirestore = useCallback(
+        async (uid: string, day: string) => {
+            setMealsLoading(true);
+            setDbError(null);
+            try {
+                const itemsSnapshot = await getDocs(collection(db, "users", uid, "foodLogs", day, "items"));
+                const entries = itemsSnapshot.docs
+                    .map((docSnap) => {
+                        const data = docSnap.data() as MealEntry;
+                        return {
+                            ...data,
+                            id: docSnap.id,
+                        };
+                    })
+                    .sort((a, b) => (b.createdAtMs ?? 0) - (a.createdAtMs ?? 0));
+                setMeal(entries);
+            } catch (err) {
+                console.error("Erreur Firestore (loadMeals):", err);
+                setDbError("Impossible de charger vos repas depuis le cloud.");
+            } finally {
+                setMealsLoading(false);
+            }
+        },
+        []
+    );
 
     // --- Récupération initiale des données locales ---
     useEffect(() => {
         try {
             const h = JSON.parse(localStorage.getItem("fittrack_alim_history") || "[]");
             if (Array.isArray(h)) setHistory(h.slice(0, 10));
-
-            const m = JSON.parse(localStorage.getItem("fittrack_meal") || "[]");
-            if (Array.isArray(m)) setMeal(m);
-
-            const p = JSON.parse(localStorage.getItem("fittrack_user_profile") || "{}");
-            if (p && typeof p === "object" && "photoUrl" in p) {
-                setProfile({ photoUrl: p.photoUrl });
-            }
         } catch (err) {
-            console.error("Erreur lecture localStorage :", err);
+            console.error("Erreur lecture localStorage (historique):", err);
+        }
+
+        const cachedMeals = readDailyMeals<MealEntry>();
+        if (cachedMeals.length) {
+            setMeal(cachedMeals);
         }
     }, []);
 
-    // --- Écoute des changements de profil depuis un autre onglet ---
+    // --- Auth Firebase ---
     useEffect(() => {
-        const onStorage = (e: StorageEvent) => {
-            if (e.key === "fittrack_user_profile") {
-                try {
-                    const p = JSON.parse(e.newValue || "{}");
-                    if (p && typeof p === "object" && "photoUrl" in p) {
-                        setProfile({ photoUrl: p.photoUrl });
-                    }
-                } catch (err) {
-                    console.error("Erreur lecture profile depuis storage :", err);
-                }
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+            if (!firebaseUser) {
+                setUserId(null);
+                setMeal([]);
+                writeDailyMeals([]);
+                router.push("/connexion");
+                return;
             }
-        };
-        window.addEventListener("storage", onStorage);
-        return () => window.removeEventListener("storage", onStorage);
+            setUserId(firebaseUser.uid);
+        });
+        return () => unsubscribe();
+    }, [router]);
+
+    // --- Suivi du changement de journée ---
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const intervalId = window.setInterval(() => {
+            const today = getCurrentDayKey();
+            setCurrentDay((prev) => {
+                if (prev !== today) {
+                    ensureDailyMealsFresh();
+                    return today;
+                }
+                return prev;
+            });
+        }, DAY_CHECK_INTERVAL);
+        return () => window.clearInterval(intervalId);
     }, []);
+
+    // --- Chargement Firestore quand utilisateur/jour prêts ---
+    useEffect(() => {
+        if (!userId) return;
+        loadMealsFromFirestore(userId, currentDay);
+    }, [userId, currentDay, loadMealsFromFirestore]);
 
     // --- Debounce recherche ---
     useEffect(() => {
@@ -122,11 +176,27 @@ export default function AlimentationPage() {
         );
     }, [meal]);
 
-    // --- Mise à jour du profil ---
-    function updateProfile(newProfile: UserProfile) {
-        localStorage.setItem("fittrack_user_profile", JSON.stringify(newProfile));
-        setProfile(newProfile); // mise à jour immédiate dans la page
-    }
+    useEffect(() => {
+        writeDailyMeals(meal);
+        if (!userId) return;
+        setDoc(
+            doc(db, "users", userId, "foodLogs", currentDay),
+            {
+                totalKcal: totals.calories,
+                totals: {
+                    protein_g: totals.protein_g,
+                    carbs_g: totals.carbs_g,
+                    fat_g: totals.fat_g,
+                    fiber_g: totals.fiber_g,
+                    sugar_g: totals.sugar_g,
+                    sodium_mg: totals.sodium_mg,
+                    cholesterol_mg: totals.cholesterol_mg,
+                },
+                updatedAt: serverTimestamp(),
+            },
+            { merge: true }
+        ).catch((err) => console.error("Erreur lors de la mise à jour des totaux Firestore :", err));
+    }, [meal, totals, userId, currentDay]);
 
 
 
@@ -173,25 +243,60 @@ export default function AlimentationPage() {
     }
 
     function addToMeal(item: NutritionItem) {
-        const entry: MealEntry = { ...item, id: uid() };
+        setDbError(null);
+        const entry: MealEntry = { ...item, id: uid(), createdAtMs: Date.now() };
         setMeal((m) => [entry, ...m]);
         setActiveTab("repas");
+        if (!userId) return;
+        setDoc(doc(db, "users", userId, "foodLogs", currentDay, "items", entry.id), {
+            ...entry,
+            createdAt: serverTimestamp(),
+        }).catch((err) => {
+            console.error("Erreur enregistrement repas:", err);
+            setDbError("Impossible de synchroniser cet aliment.");
+        });
     }
 
     function removeFromMeal(id: string) {
+        setDbError(null);
         setMeal((m) => m.filter((x) => x.id !== id));
+        if (!userId) return;
+        deleteDoc(doc(db, "users", userId, "foodLogs", currentDay, "items", id)).catch((err) => {
+            console.error("Erreur suppression repas:", err);
+            setDbError("Impossible de supprimer cet aliment du cloud.");
+        });
+    }
+
+    function clearMeal() {
+        setDbError(null);
+        const ids = meal.map((it) => it.id);
+        setMeal([]);
+        if (!userId || ids.length === 0) return;
+        const batch = writeBatch(db);
+        ids.forEach((mealId) => {
+            batch.delete(doc(db, "users", userId, "foodLogs", currentDay, "items", mealId));
+        });
+        batch.commit().catch((err) => {
+            console.error("Erreur vidage repas:", err);
+            setDbError("Impossible de vider le repas sur le cloud.");
+        });
     }
 
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-[#F5F5F5] font-sans text-[#333333]">
-            <Nav photoUrl={profile?.photoUrl} />
+            <Nav />
             <main className="min-h-screen flex flex-col items-center p-8">
                 <div className="w-full max-w-6xl">
                     <header className="mb-6">
                         <h1 className="text-4xl font-extrabold text-[#39393A]">Alimentation</h1>
                         <p className="mt-2 text-[#333]/80">Recherche, construction de repas et suivi macros via CalorieNinjas.</p>
                     </header>
+                    {dbError && (
+                        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {dbError}
+                        </div>
+                    )}
 
                     {/* Tabs */}
                     <div className="mb-4 inline-flex rounded-xl border border-black/10 bg-white p-1">
@@ -333,7 +438,12 @@ export default function AlimentationPage() {
                     {activeTab === "repas" && (
                         <section className="grid gap-4 sm:grid-cols-3">
                             <div className="sm:col-span-2 space-y-4">
-                                {meal.length === 0 && <div className="rounded-xl border border-black/5 bg-white p-6 text-sm text-[#333]/70">Votre repas est vide.</div>}
+                                {mealsLoading && (
+                                    <div className="rounded-xl border border-black/5 bg-white p-4 text-xs text-[#333]/70">
+                                        Synchronisation des repas en cours...
+                                    </div>
+                                )}
+                                {!mealsLoading && meal.length === 0 && <div className="rounded-xl border border-black/5 bg-white p-6 text-sm text-[#333]/70">Votre repas est vide.</div>}
                                 {meal.map((it) => (
                                     <div key={it.id} className="rounded-2xl bg-white border border-black/5 p-5 shadow-md">
                                         <div className="flex items-start justify-between gap-3">
@@ -366,7 +476,7 @@ export default function AlimentationPage() {
                                     </div>
                                     <div className="mt-2 text-xs text-[#333]/70">Sucres {formatNumber(totals.sugar_g)} g · Sodium {Math.round(totals.sodium_mg)} mg · Cholestérol {Math.round(totals.cholesterol_mg)} mg</div>
                                 </div>
-                                <button onClick={() => setMeal([])} className="flex-1 text-sm px-4 py-2 rounded-lg border border-black/10 hover:bg-black/5">Vider le repas</button>
+                                <button onClick={clearMeal} className="flex-1 text-sm px-4 py-2 rounded-lg border border-black/10 hover:bg-black/5">Vider le repas</button>
                             </div>
                         </section>
                     )}
