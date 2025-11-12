@@ -27,6 +27,17 @@ const SUGGESTIONS = [
     "omelette 2 oeufs",
 ];
 
+const MEAL_STORAGE_KEY = "fittrack_meal";
+const MEAL_DAY_KEY = "fittrack_meal_day";
+const DAY_CHECK_INTERVAL = 60_000;
+
+function getCurrentDayKey() {
+    const now = new Date();
+    const month = `${now.getMonth() + 1}`.padStart(2, "0");
+    const day = `${now.getDate()}`.padStart(2, "0");
+    return `${now.getFullYear()}-${month}-${day}`;
+}
+
 function formatNumber(n: number, digits = 1) {
     return Number((n || 0).toFixed(digits));
 }
@@ -53,14 +64,57 @@ export default function AlimentationPage() {
         try {
             const h = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("fittrack_alim_history") || "[]") : [];
             if (Array.isArray(h)) setHistory(h.slice(0, 10));
-            const m = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("fittrack_meal") || "[]") : [];
-            if (Array.isArray(m)) setMeal(m);
         } catch { }
+
+        if (typeof window === "undefined") return;
+
+        const today = getCurrentDayKey();
+        try {
+            const storedDay = localStorage.getItem(MEAL_DAY_KEY);
+            const m = JSON.parse(localStorage.getItem(MEAL_STORAGE_KEY) || "[]");
+
+            if (storedDay !== today) {
+                localStorage.setItem(MEAL_DAY_KEY, today);
+                localStorage.removeItem(MEAL_STORAGE_KEY);
+                setMeal([]);
+                return;
+            }
+
+            if (Array.isArray(m)) setMeal(m);
+        } catch {
+            localStorage.setItem(MEAL_DAY_KEY, today);
+            localStorage.removeItem(MEAL_STORAGE_KEY);
+            setMeal([]);
+        }
     }, []);
 
     useEffect(() => {
-        try { if (typeof window !== "undefined") localStorage.setItem("fittrack_meal", JSON.stringify(meal)); } catch { }
+        if (typeof window === "undefined") return;
+        try {
+            localStorage.setItem(MEAL_STORAGE_KEY, JSON.stringify(meal));
+            localStorage.setItem(MEAL_DAY_KEY, getCurrentDayKey());
+        } catch { }
     }, [meal]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const checkForNewDay = () => {
+            try {
+                const today = getCurrentDayKey();
+                const storedDay = localStorage.getItem(MEAL_DAY_KEY);
+                if (storedDay !== today) {
+                    localStorage.setItem(MEAL_DAY_KEY, today);
+                    localStorage.removeItem(MEAL_STORAGE_KEY);
+                    setMeal([]);
+                }
+            } catch { }
+        };
+
+        checkForNewDay();
+        const intervalId = window.setInterval(checkForNewDay, DAY_CHECK_INTERVAL);
+        return () => window.clearInterval(intervalId);
+    }, []);
 
     useEffect(() => {
         // Debounced search on query changes
