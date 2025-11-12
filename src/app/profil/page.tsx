@@ -294,25 +294,46 @@ export default function ProfilePage() {
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file || !userId) return;
+
         setUploadingPhoto(true);
         setError(null);
+
         try {
-            const photoRef = ref(storage, `users/${userId}/profile-${Date.now()}`);
-            await uploadBytes(photoRef, file);
-            const url = await getDownloadURL(photoRef);
-            await updateDoc(doc(db, "users", userId), {
-                photoUrl: url,
-                updatedAt: serverTimestamp(),
+            // On prépare les données à envoyer à Cloudinary
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("upload_preset", "user_profile_photos"); // ton upload preset ici
+
+            // Envoi vers Cloudinary
+            const response = await fetch("https://api.cloudinary.com/v1_1/dvadrpdws/image/upload", {
+                method: "POST",
+                body: formData,
             });
-            setProfile((prev) => (prev ? { ...prev, photoUrl: url } : prev));
+
+            const data = await response.json();
+
+            if (data.secure_url) {
+                // On met à jour la photo dans Firestore (ou un autre backend si tu veux)
+                await updateDoc(doc(db, "users", userId), {
+                    photoUrl: data.secure_url,
+                    updatedAt: serverTimestamp(),
+                });
+
+                setProfile((prev) => (prev ? { ...prev, photoUrl: data.secure_url } : prev));
+            } else {
+                throw new Error("Erreur lors du téléversement Cloudinary.");
+            }
+
             if (fileInputRef.current) fileInputRef.current.value = "";
         } catch (err: unknown) {
+            console.error("Erreur upload Cloudinary:", err);
             const message = err instanceof Error ? err.message : "Impossible de mettre à jour la photo.";
             setError(message);
         } finally {
             setUploadingPhoto(false);
         }
     };
+
 
     if (loading) {
         return (
