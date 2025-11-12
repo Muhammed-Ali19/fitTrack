@@ -7,6 +7,7 @@ import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getStoredDailyCalories, MEAL_DAY_KEY, MEAL_STORAGE_KEY } from "@/lib/dailyMealStorage";
 
 type UserProfile = {
     firstName?: string;
@@ -26,6 +27,8 @@ type UserProfile = {
         targetDeltaKcal?: number;
     };
 };
+
+const MEAL_REFRESH_INTERVAL = 60_000;
 
 // Small avatar
 const Avatar: React.FC<{ photoUrl?: string }> = ({ photoUrl }) => (
@@ -50,10 +53,11 @@ const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, val
 
 const ProfileCard: React.FC<{
     profile: UserProfile;
+    dailyCalories: number;
     onRequestPhoto: () => void;
     uploadingPhoto: boolean;
     onLogout: () => void;
-}> = ({ profile, onRequestPhoto, uploadingPhoto, onLogout }) => {
+}> = ({ profile, dailyCalories, onRequestPhoto, uploadingPhoto, onLogout }) => {
     const formattedBirthDate = useMemo(() => {
         if (!profile.birthDate) return "Non renseignee";
         const date = new Date(`${profile.birthDate}T00:00:00`);
@@ -121,10 +125,11 @@ const ProfileCard: React.FC<{
             ? `${profile.nutrition.activityFactor}`
             : "Non renseigne";
 
+    const consumedLabel = `${Math.round(dailyCalories)} kcal consommes aujourd'hui`;
     const nutritionDeltaDisplay =
         profile.nutrition?.targetDeltaKcal != null
-            ? `${profile.nutrition.targetDeltaKcal} kcal`
-            : "Non renseigne";
+            ? `Objectif: ${profile.nutrition.targetDeltaKcal} kcal · ${consumedLabel}`
+            : consumedLabel;
 
     return (
         <section className="mx-auto w-[min(1100px,92%)] mt-10">
@@ -215,6 +220,7 @@ export default function ProfilePage() {
     const [error, setError] = useState<string | null>(null);
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
+    const [dailyCalories, setDailyCalories] = useState(0);
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -251,6 +257,30 @@ export default function ProfilePage() {
         });
         return () => unsubscribe();
     }, [router]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const refreshDailyCalories = () => {
+            setDailyCalories(Math.round(getStoredDailyCalories()));
+        };
+
+        refreshDailyCalories();
+        const intervalId = window.setInterval(refreshDailyCalories, MEAL_REFRESH_INTERVAL);
+
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key === MEAL_STORAGE_KEY || event.key === MEAL_DAY_KEY) {
+                refreshDailyCalories();
+            }
+        };
+
+        window.addEventListener("storage", handleStorage);
+
+        return () => {
+            window.clearInterval(intervalId);
+            window.removeEventListener("storage", handleStorage);
+        };
+    }, []);
 
     const handleLogout = async () => {
         await signOut(auth);
@@ -314,6 +344,7 @@ export default function ProfilePage() {
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             <ProfileCard
                 profile={profile}
+                dailyCalories={dailyCalories}
                 onRequestPhoto={handleChoosePhoto}
                 uploadingPhoto={uploadingPhoto}
                 onLogout={handleLogout}
