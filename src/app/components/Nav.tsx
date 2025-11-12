@@ -1,12 +1,51 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { auth, db } from "@/firebaseClient";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 type NavProps = {
     photoUrl?: string;
 };
 
 const Nav: React.FC<NavProps> = ({ photoUrl }) => {
+    const [autoPhotoUrl, setAutoPhotoUrl] = useState<string | undefined>(undefined);
+
+    useEffect(() => {
+        if (photoUrl) return;
+        let isMounted = true;
+
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (!isMounted) return;
+            if (!firebaseUser) {
+                setAutoPhotoUrl(undefined);
+                return;
+            }
+
+            const fallback = firebaseUser.photoURL ?? undefined;
+            try {
+                const snapshot = await getDoc(doc(db, "users", firebaseUser.uid));
+                if (!isMounted) return;
+                if (snapshot.exists()) {
+                    const data = snapshot.data() as { photoUrl?: string };
+                    setAutoPhotoUrl(data.photoUrl || fallback);
+                } else {
+                    setAutoPhotoUrl(fallback);
+                }
+            } catch {
+                setAutoPhotoUrl(fallback);
+            }
+        });
+
+        return () => {
+            isMounted = false;
+            unsubscribe();
+        };
+    }, [photoUrl]);
+
+    const resolvedPhoto = photoUrl ?? autoPhotoUrl;
+
     return (
         <header className="relative z-10">
             <nav className="mx-auto mt-6 w-[90%] max-w-5xl rounded-2xl border border-black/5 bg-white/90 shadow-lg shadow-black/5 backdrop-blur">
@@ -37,9 +76,9 @@ const Nav: React.FC<NavProps> = ({ photoUrl }) => {
 
                     {/* Avatar profil */}
                     <div className="ml-4">
-                        {photoUrl ? (
+                        {resolvedPhoto ? (
                             <img
-                                src={photoUrl}
+                                src={resolvedPhoto}
                                 alt="Avatar"
                                 className="h-10 w-10 rounded-full object-cover border-2 border-[#FCAB10]"
                             />

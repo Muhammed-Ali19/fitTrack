@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/firebaseClient";
+import { getStoredDailyCalories, MEAL_DAY_KEY, MEAL_STORAGE_KEY } from "@/lib/dailyMealStorage";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 
@@ -24,6 +25,8 @@ type UserProfile = {
         targetDeltaKcal?: number;
     };
 };
+
+const MEAL_REFRESH_INTERVAL = 60_000;
 
 // -------------------- NAV --------------------
 type NavProps = {
@@ -166,8 +169,8 @@ const ProfileCard: React.FC<{
     const consumedLabel = `${Math.round(dailyCalories)} kcal consommes aujourd'hui`;
     const nutritionDeltaDisplay =
         profile.nutrition?.targetDeltaKcal != null
-            ? `${profile.nutrition.targetDeltaKcal} kcal`
-            : "Non renseigné";
+            ? `Objectif: ${profile.nutrition.targetDeltaKcal} kcal - ${consumedLabel}`
+            : consumedLabel;
 
     return (
         <section className="mx-auto w-[min(1100px,92%)] mt-10">
@@ -240,6 +243,7 @@ export default function ProfilePage() {
     const [error, setError] = useState<string | null>(null);
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
+    const [dailyCalories, setDailyCalories] = useState(0);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const router = useRouter();
 
@@ -355,6 +359,7 @@ export default function ProfilePage() {
             {profile && (
                 <ProfileCard
                     profile={profile}
+                    dailyCalories={dailyCalories}
                     onRequestPhoto={handleChoosePhoto}
                     uploadingPhoto={uploadingPhoto}
                     onLogout={handleLogout}
