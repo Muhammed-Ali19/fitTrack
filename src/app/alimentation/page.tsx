@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
+import { ensureDailyMealsFresh, readDailyMeals, writeDailyMeals } from "@/lib/dailyMealStorage";
 
 type NutritionItem = {
     name: string;
@@ -27,16 +28,7 @@ const SUGGESTIONS = [
     "omelette 2 oeufs",
 ];
 
-const MEAL_STORAGE_KEY = "fittrack_meal";
-const MEAL_DAY_KEY = "fittrack_meal_day";
 const DAY_CHECK_INTERVAL = 60_000;
-
-function getCurrentDayKey() {
-    const now = new Date();
-    const month = `${now.getMonth() + 1}`.padStart(2, "0");
-    const day = `${now.getDate()}`.padStart(2, "0");
-    return `${now.getFullYear()}-${month}-${day}`;
-}
 
 function formatNumber(n: number, digits = 1) {
     return Number((n || 0).toFixed(digits));
@@ -66,49 +58,20 @@ export default function AlimentationPage() {
             if (Array.isArray(h)) setHistory(h.slice(0, 10));
         } catch { }
 
-        if (typeof window === "undefined") return;
-
-        const today = getCurrentDayKey();
-        try {
-            const storedDay = localStorage.getItem(MEAL_DAY_KEY);
-            const m = JSON.parse(localStorage.getItem(MEAL_STORAGE_KEY) || "[]");
-
-            if (storedDay !== today) {
-                localStorage.setItem(MEAL_DAY_KEY, today);
-                localStorage.removeItem(MEAL_STORAGE_KEY);
-                setMeal([]);
-                return;
-            }
-
-            if (Array.isArray(m)) setMeal(m);
-        } catch {
-            localStorage.setItem(MEAL_DAY_KEY, today);
-            localStorage.removeItem(MEAL_STORAGE_KEY);
-            setMeal([]);
-        }
+        setMeal(readDailyMeals<MealEntry>());
     }, []);
 
     useEffect(() => {
-        if (typeof window === "undefined") return;
-        try {
-            localStorage.setItem(MEAL_STORAGE_KEY, JSON.stringify(meal));
-            localStorage.setItem(MEAL_DAY_KEY, getCurrentDayKey());
-        } catch { }
+        writeDailyMeals(meal);
     }, [meal]);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
 
         const checkForNewDay = () => {
-            try {
-                const today = getCurrentDayKey();
-                const storedDay = localStorage.getItem(MEAL_DAY_KEY);
-                if (storedDay !== today) {
-                    localStorage.setItem(MEAL_DAY_KEY, today);
-                    localStorage.removeItem(MEAL_STORAGE_KEY);
-                    setMeal([]);
-                }
-            } catch { }
+            if (ensureDailyMealsFresh()) {
+                setMeal([]);
+            }
         };
 
         checkForNewDay();
