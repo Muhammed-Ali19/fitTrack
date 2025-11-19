@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -7,6 +7,7 @@ import { getStoredDailyCalories, MEAL_DAY_KEY, MEAL_STORAGE_KEY } from "@/lib/da
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import PatternBackground from "../components/PatternV2";
+import Nav from "../components/Nav";
 
 type UserProfile = {
     firstName?: string;
@@ -14,7 +15,7 @@ type UserProfile = {
     email?: string;
     birthDate?: string;
     heightCm?: number;
-    weightKg?: number; // Poids ajouté
+    weightKg?: number; // Poids ajoutÃ©
     photoUrl?: string;
     sex?: "M" | "F" | "Other" | "T-MAX 530";
     training?: {
@@ -29,39 +30,6 @@ type UserProfile = {
 };
 
 const MEAL_REFRESH_INTERVAL = 60_000;
-
-// -------------------- NAV --------------------
-type NavProps = { photoUrl?: string };
-
-const Nav: React.FC<NavProps> = ({ photoUrl }) => (
-    <header className="relative z-10">
-        <nav className="mx-auto mt-6 w-[90%] max-w-5xl rounded-2xl border border-black/5 bg-white/90 shadow-lg shadow-black/5 backdrop-blur">
-            <div className="flex items-center justify-between px-6 py-3">
-                <Link href="/">
-                    <img src="/img/logo.png" alt="FitTrack Logo" style={{ width: "40px", height: "40px" }} />
-                </Link>
-                <ul className="flex items-center gap-6 text-sm font-medium">
-                    <li><Link href="/profil" className="nav-link">Profil</Link></li>
-                    <li><Link href="/alimentation" className="nav-link">Alimentation</Link></li>
-                    <li><Link href="/programme" className="nav-link">Programme</Link></li>
-                    <li><Link href="/stats" className="nav-link">Mes Stats</Link></li>
-                </ul>
-                <div className="ml-4">
-                    {photoUrl ? (
-                        <img src={photoUrl} alt="Avatar" className="h-10 w-10 rounded-full object-cover border-2 border-[#FCAB10]" />
-                    ) : (
-                        <div className="h-10 w-10 rounded-full bg-[#FCAB10] grid place-items-center text-white font-bold">?</div>
-                    )}
-                </div>
-            </div>
-        </nav>
-        <style>{`
-            .nav-link { color: #39393A; position: relative; }
-            .nav-link::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: transparent; transition: background 200ms ease; }
-            .nav-link:hover::after { background: #FCAB10; }
-        `}</style>
-    </header>
-);
 
 // -------------------- AVATAR --------------------
 const Avatar: React.FC<{ photoUrl?: string }> = ({ photoUrl }) => (
@@ -103,13 +71,13 @@ const ProfileCard: React.FC<{
     const getDelayStyle = (ms: number): React.CSSProperties => ({ transitionDelay: `${ms}ms` });
 
     const formattedBirthDate = useMemo(() => {
-        if (!profile.birthDate) return "Non renseignée";
+        if (!profile.birthDate) return "Non renseignÃ©e";
         const date = new Date(`${profile.birthDate}T00:00:00`);
         return Number.isNaN(date.getTime()) ? profile.birthDate : date.toLocaleDateString();
     }, [profile.birthDate]);
 
-    const heightDisplay = profile.heightCm != null ? `${profile.heightCm} cm` : "Non renseignée";
-    const weightDisplay = profile.weightKg != null ? `${profile.weightKg} kg` : "Non renseigné";
+    const heightDisplay = profile.heightCm != null ? `${profile.heightCm} cm` : "Non renseignÃ©e";
+    const weightDisplay = profile.weightKg != null ? `${profile.weightKg} kg` : "Non renseignÃ©";
 
     const sexLabel = useMemo(() => {
         switch (profile.sex) {
@@ -117,11 +85,11 @@ const ProfileCard: React.FC<{
             case "F": return "Femme";
             case "Other": return "Autre";
             case "T-MAX 530": return "T-MAX 530";
-            default: return "Non renseigné";
+            default: return "Non renseignÃ©";
         }
     }, [profile.sex]);
 
-    const trainingSessionsDisplay = profile.training?.sessionsPerWeek ? `${profile.training.sessionsPerWeek} / semaine` : "Non renseigné";
+    const trainingSessionsDisplay = profile.training?.sessionsPerWeek ? `${profile.training.sessionsPerWeek} / semaine` : "Non renseignÃ©";
 
     const trainingPlanLabel = useMemo(() => {
         switch (profile.training?.planType) {
@@ -129,7 +97,7 @@ const ProfileCard: React.FC<{
             case "UPPER_LOWER": return "Upper / Lower";
             case "SPLIT_4": return "Split 4 jours";
             case "PPL": return "Push Pull Legs";
-            default: return "Non renseigné";
+            default: return "Non renseignÃ©";
         }
     }, [profile.training?.planType]);
 
@@ -137,16 +105,16 @@ const ProfileCard: React.FC<{
         switch (profile.nutrition?.goalCode) {
             case "MASS_GAIN": return "Prise de masse";
             case "MUSCLE_MAINTAIN": return "Maintenance musculaire";
-            case "CUTTING": return "Sèche";
+            case "CUTTING": return "SÃ¨che";
             case "GET_BACK_IN_SHAPE": return "Reprendre la forme";
-            default: return "Non renseigné";
+            default: return "Non renseignÃ©";
         }
     }, [profile.nutrition?.goalCode]);
 
     const nutritionActivityDisplay =
         profile.nutrition?.activityFactor != null
             ? `${profile.nutrition.activityFactor}`
-            : "Non renseigné";
+            : "Non renseignÃ©";
 
     const targetDelta = profile.nutrition?.targetDeltaKcal ?? 0;
     const totalDelta = Math.round(targetDelta + dailyCalories);
@@ -189,9 +157,9 @@ const ProfileCard: React.FC<{
                         className={`rounded-2xl border border-black/5 bg-white p-5 ${motionBase} ${childMotion}`}
                         style={getDelayStyle(220)}
                     >
-                        <Field label="Prénom" value={profile.firstName || "Non renseigné"} />
-                        <Field label="Nom" value={profile.lastName || "Non renseigné"} />
-                        <Field label="E-mail" value={profile.email ? <a href={`mailto:${profile.email}`} className="underline">{profile.email}</a> : "Non renseigné"} />
+                        <Field label="PrÃ©nom" value={profile.firstName || "Non renseignÃ©"} />
+                        <Field label="Nom" value={profile.lastName || "Non renseignÃ©"} />
+                        <Field label="E-mail" value={profile.email ? <a href={`mailto:${profile.email}`} className="underline">{profile.email}</a> : "Non renseignÃ©"} />
                         <Field label="Sexe" value={sexLabel} />
                     </div>
 
@@ -201,11 +169,11 @@ const ProfileCard: React.FC<{
                     >
                         <Field label="Date de naissance" value={formattedBirthDate} />
                         <Field label="Taille" value={heightDisplay} />
-                        <Field label="Poids" value={weightDisplay} /> {/* Poids ajouté */}
-                        <Field label="Séances / semaine" value={trainingSessionsDisplay} />
+                        <Field label="Poids" value={weightDisplay} /> {/* Poids ajoutÃ© */}
+                        <Field label="SÃ©ances / semaine" value={trainingSessionsDisplay} />
                         <Field label="Programme" value={trainingPlanLabel} />
                         <Field label="Objectif nutrition" value={nutritionGoalLabel} />
-                        <Field label="Facteur d'activité" value={nutritionActivityDisplay} />
+                        <Field label="Facteur d'activitÃ©" value={nutritionActivityDisplay} />
                         <Field label="Delta calorique" value={nutritionDeltaDisplay} />
                     </div>
                 </div>
@@ -218,7 +186,7 @@ const ProfileCard: React.FC<{
                         Modifier le profil
                     </Link>
                     <button onClick={onLogout} className="inline-flex items-center gap-2 rounded-xl border border-[#39393A]/20 bg-white px-5 py-3 text-[#39393A] font-semibold shadow hover:bg-[#FCAB10]/10 transition">
-                        Se déconnecter
+                        Se dÃ©connecter
                     </button>
                 </div>
             </div>
@@ -254,14 +222,14 @@ export default function ProfilePage() {
                         ...data,
                         email: firebaseUser.email ?? data.email,
                         heightCm: data.heightCm != null ? Number(data.heightCm) : undefined,
-                        weightKg: data.weightKg != null ? Number(data.weightKg) : undefined, // Poids ajouté
+                        weightKg: data.weightKg != null ? Number(data.weightKg) : undefined, // Poids ajoutÃ©
                         photoUrl: data.photoUrl,
                     });
                 } else {
                     setProfile({ email: firebaseUser.email ?? undefined });
                 }
             } catch (err: unknown) {
-                setError(err instanceof Error ? err.message : "Impossible de récupérer vos informations.");
+                setError(err instanceof Error ? err.message : "Impossible de rÃ©cupÃ©rer vos informations.");
             } finally {
                 setLoading(false);
             }
@@ -321,7 +289,7 @@ export default function ProfilePage() {
             if (fileInputRef.current) fileInputRef.current.value = "";
         } catch (err: unknown) {
             console.error(err);
-            setError(err instanceof Error ? err.message : "Impossible de mettre à jour la photo.");
+            setError(err instanceof Error ? err.message : "Impossible de mettre Ã  jour la photo.");
         } finally { setUploadingPhoto(false); }
     };
 
@@ -346,3 +314,4 @@ export default function ProfilePage() {
         </div>
     );
 }
+
