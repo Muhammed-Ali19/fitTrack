@@ -1,15 +1,25 @@
 "use client";
-import React from "react";
-import "../patternV2.css"; // le fichier CSS juste en dessous
+import React, { useEffect, useState } from "react";
+import "../../app/patternV2.css";
 
+const PatternBackground: React.FC = () => {
+    const [offsetY, setOffsetY] = useState<number>(0);
 
-export default function PatternBackground() {
+    useEffect(() => {
+        const handleScroll = () => {
+            setOffsetY(-window.scrollY * 0.5); // vitesse du parallax
+        };
+
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
     return (
         <div
-            aria-hidden
-            className="pattern-container fixed top-0 left-0 w-screen h-screen -z-10"
+            className="pattern-container"
+            style={{ backgroundPosition: `center ${offsetY}px` }}
         />
-
     );
-}
+};
 
+export default PatternBackground;

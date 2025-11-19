@@ -255,10 +255,6 @@ export default function FitTrackHome() {
       <Nav />
       <PatternBackground />
 
-
-
-
-
       {/* SECTION IMC */}
       <main className="relative z-10 mx-auto grid w-[90%] max-w-5xl place-items-center py-16 animate-page-enter">
         <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl shadow-md shadow-black/10 px-6 py-4 inline-block animate-card-rise animate-delay-1">
