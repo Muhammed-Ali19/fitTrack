@@ -260,8 +260,8 @@ export default function FitTrackHome() {
 
 
       {/* SECTION IMC */}
-      <main className="relative z-10 mx-auto grid w-[90%] max-w-5xl place-items-center py-16">
-        <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl shadow-md shadow-black/10 px-6 py-4 inline-block">
+      <main className="relative z-10 mx-auto grid w-[90%] max-w-5xl place-items-center py-16 animate-page-enter">
+        <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl shadow-md shadow-black/10 px-6 py-4 inline-block animate-card-rise animate-delay-1">
           <h1 className="text-5xl font-extrabold tracking-tight text-[#39393A] sm:text-6xl">
             IMC
           </h1>
@@ -270,7 +270,7 @@ export default function FitTrackHome() {
           </p>
         </div>
 
-        <form onSubmit={onCalc} className="mt-8 w-full max-w-xl rounded-3xl border border-black/5 bg-white/95 p-6 shadow-xl shadow-black/5 backdrop-blur">
+        <form onSubmit={onCalc} className="mt-8 w-full max-w-xl rounded-3xl border border-black/5 bg-white/95 p-6 shadow-xl shadow-black/5 backdrop-blur animate-card-pop animate-delay-2">
           <div className="grid gap-4">
             <div>
               <label htmlFor="height" className="mb-1 block text-sm font-medium text-[#39393A]">Taille (cm)</label>
@@ -361,7 +361,7 @@ export default function FitTrackHome() {
           </div>
 
           {bmi !== null && (
-            <div className="mt-5 rounded-xl border border-black/5 bg-[#F5F5F5] p-4">
+            <div className="mt-5 rounded-xl border border-black/5 bg-[#F5F5F5] p-4 animate-card-pop animate-delay-3">
               <div className="flex items-baseline justify-between">
                 <p className="text-sm font-medium text-[#39393A]">Votre IMC</p>
                 <p className="text-sm font-medium text-[#333333]/70">(kg/m²)</p>

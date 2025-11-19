@@ -139,14 +139,14 @@ export default function StatsPage() {
             <Nav photoUrl={profile?.photoUrl} />
             <PatternBackground />
 
-            <main className="min-h-screen flex flex-col items-center p-8 ">
-                <div className="w-full max-w-4xl bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-md border border-black/5 mb-6">
+            <main className="min-h-screen flex flex-col items-center p-8 animate-page-enter">
+                <div className="w-full max-w-4xl bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-md border border-black/5 mb-6 animate-card-rise animate-delay-1">
                     <h1 className="text-4xl font-extrabold text-[#39393A] mb-6">
                         Statistiques de {profile?.firstName || "l'utilisateur"}
                     </h1>
 
                     {/* --- Graphique du poids --- */}
-                    <section className="bg-white p-6 rounded-2xl shadow-md border border-black/5 mb-6">
+                    <section className="bg-white p-6 rounded-2xl shadow-md border border-black/5 mb-6 animate-card-pop animate-delay-2">
                         {weightHistory.length ? (
                             <>
                                 <Line data={weightData} options={weightOptions} />
@@ -166,7 +166,7 @@ export default function StatsPage() {
                     </section>
 
                     {/* --- Informations physiques --- */}
-                    <section className="bg-white p-6 rounded-2xl shadow-md border border-black/5 mb-6">
+                    <section className="bg-white p-6 rounded-2xl shadow-md border border-black/5 mb-6 animate-card-pop animate-delay-3">
                         <h2 className="text-xl font-semibold mb-4">Données physiques</h2>
                         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                             <li>
@@ -189,7 +189,7 @@ export default function StatsPage() {
                     </section>
 
                     {/* --- Résumé rapide --- */}
-                    <section className="bg-[#FCAB10]/10 border border-[#FCAB10]/20 p-6 rounded-2xl">
+                    <section className="bg-[#FCAB10]/10 border border-[#FCAB10]/20 p-6 rounded-2xl animate-card-pop animate-delay-4">
                         <h2 className="text-xl font-semibold mb-2 text-[#39393A]">
                             Résumé rapide
                         </h2>

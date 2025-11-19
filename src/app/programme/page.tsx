@@ -109,13 +109,13 @@ export default function SeancesPage() {
             <Nav photoUrl={profile?.photoUrl} />
             <PatternBackground />
 
-            <main className="p-8 flex flex-col items-center pt-24 pb-16">
+            <main className="p-8 flex flex-col items-center pt-24 pb-16 animate-page-enter">
                 {/* Titre principal */}
                 <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-md border border-black/5 mb-6">
-                    <h1 className="text-4xl font-bold text-[#39393A] my-6">
+                    <h1 className="text-4xl font-bold text-[#39393A] my-6 animate-card-rise animate-delay-1">
                         🏋️‍♂️ Mes Programmes d’Entraînement
                     </h1> {/* Section Récapitulatif */}
-                    <section className="bg-white border border-[#FCAB10]/30 rounded-2xl shadow-lg w-full max-w-3xl p-6 mb-10 flex justify-between items-center text-center">
+                    <section className="bg-white border border-[#FCAB10]/30 rounded-2xl shadow-lg w-full max-w-3xl p-6 mb-10 flex justify-between items-center text-center animate-card-rise animate-delay-2">
                         <div>
                             <p className="text-2xl font-bold text-[#FCAB10]">{seances.length}</p>
                             <p className="text-gray-600">Séances créées</p>
@@ -133,7 +133,7 @@ export default function SeancesPage() {
                     {/* Formulaire */}
                     <form
                         onSubmit={ajouterSeance}
-                        className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-2xl border border-[#FCAB10]/20 space-y-6 "
+                        className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-2xl border border-[#FCAB10]/20 space-y-6 animate-card-rise animate-delay-3 "
                     >
                         <h2 className="text-2xl font-semibold text-[#39393A] mb-4">➕ Créer une nouvelle séance</h2>
 
@@ -234,9 +234,13 @@ export default function SeancesPage() {
                     </form>
 
                     {/* Liste des séances */}
-                    <section className="w-full max-w-4xl mt-10 space-y-6">
-                        {seances.map((s) => (
-                            <div key={s.id} className="bg-white border border-[#FCAB10]/30 rounded-xl shadow-md overflow-hidden">
+                    <section className="w-full max-w-4xl mt-10 space-y-6 animate-card-rise" style={{ animationDelay: "0.4s" }}>
+                        {seances.map((s, index) => (
+                            <div
+                                key={s.id}
+                                className="bg-white border border-[#FCAB10]/30 rounded-xl shadow-md overflow-hidden animate-card-pop"
+                                style={{ animationDelay: `${0.45 + index * 0.05}s` }}
+                            >
                                 <div className="flex items-center gap-6 p-4">
                                     <img src={s.image} alt={s.titre} className="w-32 h-32 object-cover rounded-xl border border-[#FCAB10]/20" />
                                     <div className="flex-1">
@@ -265,7 +269,11 @@ export default function SeancesPage() {
                             </div>
                         ))}
 
-                        {seances.length === 0 && <p className="text-center text-gray-500 mt-6">Aucune séance enregistrée. Commence à créer ton premier programme 💪</p>}
+                        {seances.length === 0 && (
+                            <p className="text-center text-gray-500 mt-6 animate-card-rise" style={{ animationDelay: "0.45s" }}>
+                                Aucune séance enregistrée. Commence à créer ton premier programme 💪
+                            </p>
+                        )}
                     </section>
                 </div>
 

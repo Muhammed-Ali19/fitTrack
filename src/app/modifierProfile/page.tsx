@@ -196,8 +196,8 @@ export default function ModifierProfilePage() {
     <div className=" min-h-screen text-[#333333]">
       <Nav />
       <PatternBackground />
-      <main className="mx-auto mt-10 w-[min(900px,92%)] rounded-3xl border border-black/5 bg-white/90 p-8 shadow-lg shadow-black/5 backdrop-blur bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-md border border-black/5 mb-6">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <main className="mx-auto mt-10 w-[min(900px,92%)] rounded-3xl border border-black/5 bg-white/90 p-8 shadow-lg shadow-black/5 backdrop-blur bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-md border border-black/5 mb-6 animate-page-enter">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-card-rise animate-delay-1">
           <div>
             <h1 className="text-3xl font-extrabold text-[#39393A]">Modifier le profil</h1>
             <p className="text-[#333333]/70">Mettez à jour vos informations personnelles.</p>
@@ -210,7 +210,7 @@ export default function ModifierProfilePage() {
 
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
-        <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+        <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center animate-card-rise animate-delay-2">
           <div className="h-24 w-24 overflow-hidden rounded-full bg-[#FCAB10] shadow ring-8 ring-white/70">
             {form.photoUrl ? <img src={form.photoUrl} alt="Profil" className="h-full w-full object-cover" /> :
               <div className="grid h-full w-full place-items-center text-[#39393A]">
@@ -226,10 +226,10 @@ export default function ModifierProfilePage() {
           </button>
         </div>
 
-        {error && <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">{error}</div>}
-        {success && <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-700">{success}</div>}
+        {error && <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 animate-card-pop animate-delay-3">{error}</div>}
+        {success && <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-700 animate-card-pop animate-delay-3">{success}</div>}
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 md:grid-cols-2 animate-card-pop animate-delay-4">
           <div className="col-span-full grid gap-4 md:grid-cols-2">
             <Field label="Prénom" value={form.firstName} onChange={handleChange("firstName")} required />
             <Field label="Nom" value={form.lastName} onChange={handleChange("lastName")} required />

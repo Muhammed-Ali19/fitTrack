@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
@@ -69,9 +70,15 @@ export default function AlimentationPage() {
     const [dailyWaterGoal, setDailyWaterGoal] = useState<number | null>(null);
     const [goalLoading, setGoalLoading] = useState(false);
     const [goalError, setGoalError] = useState<string | null>(null);
+    const [hasEntered, setHasEntered] = useState(false);
 
     const router = useRouter();
     const debounceRef = useRef<NodeJS.Timeout | null>(null);
+    const motionBase =
+        "transform transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100";
+    const containerMotion = hasEntered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6";
+    const childMotion = hasEntered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4";
+    const getDelayStyle = (ms: number): CSSProperties => ({ transitionDelay: `${ms}ms` });
 
     const loadMealsFromFirestore = useCallback(
         async (uid: string, day: string) => {
@@ -98,6 +105,15 @@ export default function AlimentationPage() {
         },
         []
     );
+
+    useEffect(() => {
+        if (typeof window === "undefined") {
+            setHasEntered(true);
+            return;
+        }
+        const raf = window.requestAnimationFrame(() => setHasEntered(true));
+        return () => window.cancelAnimationFrame(raf);
+    }, []);
 
     // --- Récupération initiale des données locales ---
     useEffect(() => {
@@ -360,8 +376,14 @@ export default function AlimentationPage() {
             <Nav />
             <PatternBackground />
             <main className="min-h-screen flex flex-col items-center p-8">
-                <div className="w-full max-w-6xl bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-md border border-black/5 mb-6">
-                    <header className="mb-6">
+                <div
+                    className={`w-full max-w-6xl bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-md border border-black/5 mb-6 ${motionBase} ${containerMotion}`}
+                    style={getDelayStyle(80)}
+                >
+                    <header
+                        className={`mb-6 ${motionBase} ${childMotion}`}
+                        style={getDelayStyle(140)}
+                    >
                         <h1 className="text-4xl font-extrabold text-[#39393A]">Alimentation</h1>
                         <p className="mt-2 text-[#333]/80">Recherche, construction de repas et suivi macros via CalorieNinjas.</p>
                     </header>
@@ -386,9 +408,15 @@ export default function AlimentationPage() {
                         </div>
                     ) : (
                         (dailyCalorieGoal !== null || dailyWaterGoal !== null) && (
-                            <div className="mb-6 grid gap-4 sm:grid-cols-2">
+                            <div
+                                className={`mb-6 grid gap-4 sm:grid-cols-2 ${motionBase} ${childMotion}`}
+                                style={getDelayStyle(200)}
+                            >
                                 {dailyCalorieGoal !== null && (
-                                    <section className="rounded-2xl border border-black/5 bg-white p-5 shadow-md shadow-black/5">
+                                    <section
+                                        className={`rounded-2xl border border-black/5 bg-white p-5 shadow-md shadow-black/5 ${motionBase} ${childMotion}`}
+                                        style={getDelayStyle(240)}
+                                    >
                                         <div className="flex flex-col gap-4">
                                             <div>
                                                 <p className="text-sm font-medium text-[#39393A]">🎯 Objectif calories</p>
@@ -419,7 +447,10 @@ export default function AlimentationPage() {
                                     </section>
                                 )}
                                 {dailyWaterGoal !== null && (
-                                    <section className="rounded-2xl border border-black/5 bg-white p-5 shadow-md shadow-black/5">
+                                    <section
+                                        className={`rounded-2xl border border-black/5 bg-white p-5 shadow-md shadow-black/5 ${motionBase} ${childMotion}`}
+                                        style={getDelayStyle(280)}
+                                    >
                                         <p className="text-sm font-medium text-[#39393A]">💧 Objectif hydratation</p>
                                         <p className="text-2xl font-bold text-[#39393A]">{dailyWaterGoal} L / jour</p>
                                         <p className="text-xs text-[#333333]/70">
@@ -432,7 +463,10 @@ export default function AlimentationPage() {
                     )}
 
                     {/* Tabs */}
-                    <div className="mb-4 inline-flex rounded-xl border border-black/10 bg-white p-1">
+                    <div
+                        className={`mb-4 inline-flex rounded-xl border border-black/10 bg-white p-1 ${motionBase} ${childMotion}`}
+                        style={getDelayStyle(320)}
+                    >
                         {["recherche", "repas", "historique"].map((t) => (
                             <button
                                 key={t}
@@ -447,7 +481,10 @@ export default function AlimentationPage() {
                     {/* --- Onglet Recherche --- */}
                     {activeTab === "recherche" && (
                         <>
-                            <section className="bg-white p-6 rounded-2xl shadow-md border border-black/5 mb-6">
+                            <section
+                                className={`bg-white p-6 rounded-2xl shadow-md border border-black/5 mb-6 ${motionBase} ${childMotion}`}
+                                style={getDelayStyle(360)}
+                            >
                                 <form onSubmit={(e) => { e.preventDefault(); if (query.trim()) rechercher(query); }} className="flex flex-col sm:flex-row gap-3">
                                     <input
                                         type="text"
@@ -569,7 +606,10 @@ export default function AlimentationPage() {
 
                     {/* --- Onglet Repas --- */}
                     {activeTab === "repas" && (
-                        <section className="grid gap-4 sm:grid-cols-3">
+                        <section
+                            className={`grid gap-4 sm:grid-cols-3 ${motionBase} ${childMotion}`}
+                            style={getDelayStyle(360)}
+                        >
                             <div className="sm:col-span-2 space-y-4">
                                 {mealsLoading && (
                                     <div className="rounded-xl border border-black/5 bg-white p-4 text-xs text-[#333]/70">
@@ -616,7 +656,10 @@ export default function AlimentationPage() {
 
                     {/* --- Onglet Historique --- */}
                     {activeTab === "historique" && (
-                        <section className="rounded-2xl bg-white border border-black/5 p-5 shadow-md">
+                        <section
+                            className={`rounded-2xl bg-white border border-black/5 p-5 shadow-md ${motionBase} ${childMotion}`}
+                            style={getDelayStyle(360)}
+                        >
                             {history.length === 0 ? (
                                 <div className="text-sm text-[#333]/70">Aucune recherche récente.</div>
                             ) : (

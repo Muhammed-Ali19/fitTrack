@@ -86,6 +86,22 @@ const ProfileCard: React.FC<{
     uploadingPhoto: boolean;
     onLogout: () => void;
 }> = ({ profile, dailyCalories, onRequestPhoto, uploadingPhoto, onLogout }) => {
+    const [hasEntered, setHasEntered] = useState(false);
+    useEffect(() => {
+        if (typeof window === "undefined") {
+            setHasEntered(true);
+            return;
+        }
+        const raf = window.requestAnimationFrame(() => setHasEntered(true));
+        return () => window.cancelAnimationFrame(raf);
+    }, []);
+
+    const motionBase =
+        "transform transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100";
+    const containerMotion = hasEntered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8";
+    const childMotion = hasEntered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4";
+    const getDelayStyle = (ms: number): React.CSSProperties => ({ transitionDelay: `${ms}ms` });
+
     const formattedBirthDate = useMemo(() => {
         if (!profile.birthDate) return "Non renseignée";
         const date = new Date(`${profile.birthDate}T00:00:00`);
@@ -140,12 +156,18 @@ const ProfileCard: React.FC<{
             : `${Math.round(dailyCalories)} kcal`;
 
     return (
-        <section className="mx-auto w-[min(1100px,92%)] mt-10">
-            <div className="rounded-3xl bg-white/90 backdrop-blur-sm shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-black/5 p-6 sm:p-10 relative overflow-hidden">
+        <section className={`mx-auto w-[min(1100px,92%)] mt-10 ${motionBase} ${containerMotion}`}>
+            <div
+                className={`rounded-3xl bg-white/90 backdrop-blur-sm shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-black/5 p-6 sm:p-10 relative overflow-hidden ${motionBase} ${childMotion}`}
+                style={getDelayStyle(60)}
+            >
                 <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#FCAB10]/20 blur-3xl" />
                 <div className="pointer-events-none absolute -left-24 -bottom-24 h-64 w-64 rounded-full bg-[#FCAB10]/15 blur-3xl" />
 
-                <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-10">
+                <div
+                    className={`flex flex-col sm:flex-row items-start gap-6 sm:gap-10 ${motionBase} ${childMotion}`}
+                    style={getDelayStyle(140)}
+                >
                     <div className="flex flex-col items-start gap-3">
                         <Avatar photoUrl={profile.photoUrl} />
                         <button
@@ -163,14 +185,20 @@ const ProfileCard: React.FC<{
                 </div>
 
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="rounded-2xl border border-black/5 bg-white p-5">
+                    <div
+                        className={`rounded-2xl border border-black/5 bg-white p-5 ${motionBase} ${childMotion}`}
+                        style={getDelayStyle(220)}
+                    >
                         <Field label="Prénom" value={profile.firstName || "Non renseigné"} />
                         <Field label="Nom" value={profile.lastName || "Non renseigné"} />
                         <Field label="E-mail" value={profile.email ? <a href={`mailto:${profile.email}`} className="underline">{profile.email}</a> : "Non renseigné"} />
                         <Field label="Sexe" value={sexLabel} />
                     </div>
 
-                    <div className="rounded-2xl border border-black/5 bg-white p-5">
+                    <div
+                        className={`rounded-2xl border border-black/5 bg-white p-5 ${motionBase} ${childMotion}`}
+                        style={getDelayStyle(280)}
+                    >
                         <Field label="Date de naissance" value={formattedBirthDate} />
                         <Field label="Taille" value={heightDisplay} />
                         <Field label="Poids" value={weightDisplay} /> {/* Poids ajouté */}
@@ -182,7 +210,10 @@ const ProfileCard: React.FC<{
                     </div>
                 </div>
 
-                <div className="mt-8 flex items-center justify-end gap-4">
+                <div
+                    className={`mt-8 flex items-center justify-end gap-4 ${motionBase} ${childMotion}`}
+                    style={getDelayStyle(360)}
+                >
                     <Link href="/modifierProfile" className="inline-flex items-center gap-2 rounded-xl border border-[#FCAB10] px-5 py-3 text-[#39393A] font-semibold shadow hover:bg-[#FCAB10]/10 transition">
                         Modifier le profil
                     </Link>
