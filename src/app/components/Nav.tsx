@@ -13,6 +13,7 @@ const NAV_LINKS = [
     { href: "/profil", label: "Profil" },
     { href: "/alimentation", label: "Alimentation" },
     { href: "/programme", label: "Programme" },
+    { href: "/metrics", label: "Métriques" },
     { href: "/stats", label: "Mes Stats" },
 ];
 
@@ -96,6 +97,12 @@ const Nav: React.FC<NavProps> = ({ photoUrl }) => {
 
                     {/* Actions droite */}
                     <div className="flex items-center gap-3 md:pl-4">
+                        <Link
+                            href="/"
+                            className="hidden md:inline-flex items-center justify-center rounded-xl bg-[#FCAB10] px-4 py-2 text-sm font-semibold text-white shadow hover:brightness-95"
+                        >
+                            IMC
+                        </Link>
                         <button
                             type="button"
                             className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white/80 transition hover:border-[#FCAB10] md:hidden"
@@ -157,6 +164,15 @@ const Nav: React.FC<NavProps> = ({ photoUrl }) => {
                                 </Link>
                             </li>
                         ))}
+                        <li>
+                            <Link
+                                href="/"
+                                className="block rounded-xl bg-[#FCAB10] px-4 py-2 text-center text-sm font-semibold text-white shadow-sm shadow-black/5 transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                                onClick={closeMobileMenu}
+                            >
+                                IMC
+                            </Link>
+                        </li>
                     </ul>
                 </div>
             </nav>

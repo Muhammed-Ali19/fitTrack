@@ -15,7 +15,7 @@ type UserProfile = {
     email?: string;
     birthDate?: string;
     heightCm?: number;
-    weightKg?: number; // Poids ajoutÃ©
+    weightKg?: number; // Poids ajouté
     photoUrl?: string;
     sex?: "M" | "F" | "Other" | "T-MAX 530";
     training?: {
@@ -71,13 +71,13 @@ const ProfileCard: React.FC<{
     const getDelayStyle = (ms: number): React.CSSProperties => ({ transitionDelay: `${ms}ms` });
 
     const formattedBirthDate = useMemo(() => {
-        if (!profile.birthDate) return "Non renseignÃ©e";
+        if (!profile.birthDate) return "Non renseignée";
         const date = new Date(`${profile.birthDate}T00:00:00`);
         return Number.isNaN(date.getTime()) ? profile.birthDate : date.toLocaleDateString();
     }, [profile.birthDate]);
 
-    const heightDisplay = profile.heightCm != null ? `${profile.heightCm} cm` : "Non renseignÃ©e";
-    const weightDisplay = profile.weightKg != null ? `${profile.weightKg} kg` : "Non renseignÃ©";
+    const heightDisplay = profile.heightCm != null ? `${profile.heightCm} cm` : "Non renseigné";
+    const weightDisplay = profile.weightKg != null ? `${profile.weightKg} kg` : "Non renseigné";
 
     const sexLabel = useMemo(() => {
         switch (profile.sex) {
@@ -85,11 +85,11 @@ const ProfileCard: React.FC<{
             case "F": return "Femme";
             case "Other": return "Autre";
             case "T-MAX 530": return "T-MAX 530";
-            default: return "Non renseignÃ©";
+            default: return "Non renseigné";
         }
     }, [profile.sex]);
 
-    const trainingSessionsDisplay = profile.training?.sessionsPerWeek ? `${profile.training.sessionsPerWeek} / semaine` : "Non renseignÃ©";
+    const trainingSessionsDisplay = profile.training?.sessionsPerWeek ? `${profile.training.sessionsPerWeek} / semaine` : "Non renseigné";
 
     const trainingPlanLabel = useMemo(() => {
         switch (profile.training?.planType) {
@@ -97,7 +97,7 @@ const ProfileCard: React.FC<{
             case "UPPER_LOWER": return "Upper / Lower";
             case "SPLIT_4": return "Split 4 jours";
             case "PPL": return "Push Pull Legs";
-            default: return "Non renseignÃ©";
+            default: return "Non renseigné";
         }
     }, [profile.training?.planType]);
 
@@ -105,16 +105,16 @@ const ProfileCard: React.FC<{
         switch (profile.nutrition?.goalCode) {
             case "MASS_GAIN": return "Prise de masse";
             case "MUSCLE_MAINTAIN": return "Maintenance musculaire";
-            case "CUTTING": return "SÃ¨che";
+            case "CUTTING": return "Sèche";
             case "GET_BACK_IN_SHAPE": return "Reprendre la forme";
-            default: return "Non renseignÃ©";
+            default: return "Non renseigné";
         }
     }, [profile.nutrition?.goalCode]);
 
     const nutritionActivityDisplay =
         profile.nutrition?.activityFactor != null
             ? `${profile.nutrition.activityFactor}`
-            : "Non renseignÃ©";
+            : "Non renseigné";
 
     const targetDelta = profile.nutrition?.targetDeltaKcal ?? 0;
     const totalDelta = Math.round(targetDelta + dailyCalories);
@@ -157,9 +157,9 @@ const ProfileCard: React.FC<{
                         className={`rounded-2xl border border-black/5 bg-white p-5 ${motionBase} ${childMotion}`}
                         style={getDelayStyle(220)}
                     >
-                        <Field label="PrÃ©nom" value={profile.firstName || "Non renseignÃ©"} />
-                        <Field label="Nom" value={profile.lastName || "Non renseignÃ©"} />
-                        <Field label="E-mail" value={profile.email ? <a href={`mailto:${profile.email}`} className="underline">{profile.email}</a> : "Non renseignÃ©"} />
+                        <Field label="Prénom" value={profile.firstName || "Non renseigné"} />
+                        <Field label="Nom" value={profile.lastName || "Non renseigné"} />
+                        <Field label="E-mail" value={profile.email ? <a href={`mailto:${profile.email}`} className="underline">{profile.email}</a> : "Non renseigné"} />
                         <Field label="Sexe" value={sexLabel} />
                     </div>
 
@@ -169,11 +169,11 @@ const ProfileCard: React.FC<{
                     >
                         <Field label="Date de naissance" value={formattedBirthDate} />
                         <Field label="Taille" value={heightDisplay} />
-                        <Field label="Poids" value={weightDisplay} /> {/* Poids ajoutÃ© */}
-                        <Field label="SÃ©ances / semaine" value={trainingSessionsDisplay} />
+                        <Field label="Poids" value={weightDisplay} /> {/* Poids ajouté */}
+                        <Field label="Séances / semaine" value={trainingSessionsDisplay} />
                         <Field label="Programme" value={trainingPlanLabel} />
                         <Field label="Objectif nutrition" value={nutritionGoalLabel} />
-                        <Field label="Facteur d'activitÃ©" value={nutritionActivityDisplay} />
+                        <Field label="Facteur d'activité" value={nutritionActivityDisplay} />
                         <Field label="Delta calorique" value={nutritionDeltaDisplay} />
                     </div>
                 </div>
@@ -186,7 +186,7 @@ const ProfileCard: React.FC<{
                         Modifier le profil
                     </Link>
                     <button onClick={onLogout} className="inline-flex items-center gap-2 rounded-xl border border-[#39393A]/20 bg-white px-5 py-3 text-[#39393A] font-semibold shadow hover:bg-[#FCAB10]/10 transition">
-                        Se dÃ©connecter
+                        Se déconnecter
                     </button>
                 </div>
             </div>
@@ -223,14 +223,14 @@ export default function ProfilePage() {
                         ...data,
                         email: firebaseUser.email ?? data.email,
                         heightCm: data.heightCm != null ? Number(data.heightCm) : undefined,
-                        weightKg: data.weightKg != null ? Number(data.weightKg) : undefined, // Poids ajoutÃ©
+                        weightKg: data.weightKg != null ? Number(data.weightKg) : undefined, // Poids ajouté
                         photoUrl: data.photoUrl,
                     });
                 } else {
                     setProfile({ email: firebaseUser.email ?? undefined });
                 }
             } catch (err: unknown) {
-                setError(err instanceof Error ? err.message : "Impossible de rÃ©cupÃ©rer vos informations.");
+                setError(err instanceof Error ? err.message : "Impossible de récupérer vos informations.");
             } finally {
                 setLoading(false);
             }
@@ -290,7 +290,7 @@ export default function ProfilePage() {
             if (fileInputRef.current) fileInputRef.current.value = "";
         } catch (err: unknown) {
             console.error(err);
-            setError(err instanceof Error ? err.message : "Impossible de mettre Ã  jour la photo.");
+            setError(err instanceof Error ? err.message : "Impossible de mettre à jour la photo.");
         } finally { setUploadingPhoto(false); }
     };
 
