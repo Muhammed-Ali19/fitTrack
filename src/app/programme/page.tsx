@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 import React, { useEffect, useState } from "react";
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
 import { auth, db } from "@/firebaseClient";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import PatternBackground from "../components/PatternV2";
 
@@ -32,13 +32,23 @@ interface Seance {
     exercices: Exercice[];
 }
 
+type StoredPlan = {
+    sessionsPerWeek?: number;
+    planType?: TrainingPlanType;
+    goalCode?: GoalCode;
+    seances?: Seance[];
+    savedNote?: string;
+    updatedAt?: unknown;
+};
+
+const LOCAL_PLAN_KEY = "fittrack_training_plan";
+
 const GOAL_LABELS: Record<GoalCode, string> = {
     MASS_GAIN: "Prise de masse",
     MUSCLE_MAINTAIN: "Maintenance musculaire",
-    CUTTING: "Sèche",
+    CUTTING: "Seche",
     GET_BACK_IN_SHAPE: "Reprise en forme",
 };
-
 function repScheme(goal: GoalCode): string {
     switch (goal) {
         case "MASS_GAIN":
@@ -81,14 +91,14 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 id: 1,
                 titre: "Full Body A",
                 objectif: goalLabel,
-                niveau: "Intermédiaire",
+                niveau: "Intermediaire",
                 duree: 55,
                 image: "/images/fullbody-a.jpg",
                 exercices: [
                     { nom: "Squat barre", repetitions: reps },
-                    { nom: "Développé couché", repetitions: reps },
+                    { nom: "Developpe couche", repetitions: reps },
                     { nom: "Rowing barre", repetitions: reps },
-                    { nom: "Fentes marchées", repetitions: accessory },
+                    { nom: "Fentes marchees", repetitions: accessory },
                     { nom: "Gainage planche", repetitions: "3x45-60s" },
                 ],
             },
@@ -96,36 +106,35 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 id: 2,
                 titre: "Full Body B",
                 objectif: goalLabel,
-                niveau: "Intermédiaire",
+                niveau: "Intermediaire",
                 duree: 55,
                 image: "/images/fullbody-b.jpg",
                 exercices: [
-                    { nom: "Soulevé de terre jambes tendues", repetitions: reps },
-                    { nom: "Développé militaire haltères", repetitions: reps },
+                    { nom: "Souleve de terre jambes tendues", repetitions: reps },
+                    { nom: "Developpe militaire halteres", repetitions: reps },
                     { nom: "Tractions / tirage vertical", repetitions: reps },
                     { nom: "Hip thrust", repetitions: reps },
-                    { nom: "Gainage latéral", repetitions: "3x30-45s" },
+                    { nom: "Gainage lateral", repetitions: "3x30-45s" },
                 ],
             },
         ];
         return repeatPattern(base, ctx.sessionsPerWeek);
     }
-
     if (ctx.planType === "UPPER_LOWER") {
         const base: Seance[] = [
             {
                 id: 1,
                 titre: "Upper",
                 objectif: goalLabel,
-                niveau: "Intermédiaire",
+                niveau: "Intermediaire",
                 duree: 60,
                 image: "/images/upper.jpg",
                 exercices: [
-                    { nom: "Développé couché ou incliné", repetitions: reps },
+                    { nom: "Developpe couche ou incline", repetitions: reps },
                     { nom: "Tractions / tirage vertical", repetitions: reps },
-                    { nom: "Développé militaire", repetitions: reps },
-                    { nom: "Rowing haltères", repetitions: reps },
-                    { nom: "Élévations latérales", repetitions: accessory },
+                    { nom: "Developpe militaire", repetitions: reps },
+                    { nom: "Rowing halteres", repetitions: reps },
+                    { nom: "Elevations laterales", repetitions: accessory },
                     { nom: "Curl + barre au front", repetitions: accessory },
                 ],
             },
@@ -133,12 +142,12 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 id: 2,
                 titre: "Lower",
                 objectif: goalLabel,
-                niveau: "Intermédiaire",
+                niveau: "Intermediaire",
                 duree: 60,
                 image: "/images/lower.jpg",
                 exercices: [
                     { nom: "Squat ou presse", repetitions: reps },
-                    { nom: "Soulevé de terre jambes tendues", repetitions: reps },
+                    { nom: "Souleve de terre jambes tendues", repetitions: reps },
                     { nom: "Fentes bulgares", repetitions: accessory },
                     { nom: "Leg curl", repetitions: accessory },
                     { nom: "Mollets debout", repetitions: accessory },
@@ -155,14 +164,14 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 id: 1,
                 titre: "Push",
                 objectif: goalLabel,
-                niveau: "Intermédiaire",
+                niveau: "Intermediaire",
                 duree: 55,
                 image: "/images/push.jpg",
                 exercices: [
-                    { nom: "Développé couché incliné", repetitions: reps },
-                    { nom: "Dips ou pompes lestées", repetitions: reps },
-                    { nom: "Développé militaire", repetitions: reps },
-                    { nom: "Élévations latérales", repetitions: accessory },
+                    { nom: "Developpe couche incline", repetitions: reps },
+                    { nom: "Dips ou pompes lestees", repetitions: reps },
+                    { nom: "Developpe militaire", repetitions: reps },
+                    { nom: "Elevations laterales", repetitions: accessory },
                     { nom: "Extensions triceps", repetitions: accessory },
                 ],
             },
@@ -170,13 +179,13 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 id: 2,
                 titre: "Pull",
                 objectif: goalLabel,
-                niveau: "Intermédiaire",
+                niveau: "Intermediaire",
                 duree: 55,
                 image: "/images/pull.jpg",
                 exercices: [
                     { nom: "Tractions / tirage vertical", repetitions: reps },
                     { nom: "Rowing barre", repetitions: reps },
-                    { nom: "Rowing unilatéral", repetitions: accessory },
+                    { nom: "Rowing unilateral", repetitions: accessory },
                     { nom: "Curl biceps", repetitions: accessory },
                     { nom: "Face pulls", repetitions: accessory },
                 ],
@@ -185,13 +194,13 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 id: 3,
                 titre: "Legs",
                 objectif: goalLabel,
-                niveau: "Intermédiaire",
+                niveau: "Intermediaire",
                 duree: 60,
                 image: "/images/legs.jpg",
                 exercices: [
                     { nom: "Squat ou front squat", repetitions: reps },
                     { nom: "Hip thrust", repetitions: reps },
-                    { nom: "Fentes marchées", repetitions: accessory },
+                    { nom: "Fentes marchees", repetitions: accessory },
                     { nom: "Leg curl", repetitions: accessory },
                     { nom: "Mollets debout", repetitions: accessory },
                 ],
@@ -200,14 +209,14 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 id: 4,
                 titre: "Upper Accessory",
                 objectif: goalLabel,
-                niveau: "Intermédiaire",
+                niveau: "Intermediaire",
                 duree: 50,
                 image: "/images/upper2.jpg",
                 exercices: [
-                    { nom: "Développé haltères", repetitions: reps },
+                    { nom: "Developpe halteres", repetitions: reps },
                     { nom: "Tirage poitrine prise neutre", repetitions: reps },
                     { nom: "Rowing machine", repetitions: accessory },
-                    { nom: "Élévations latérales", repetitions: accessory },
+                    { nom: "Elevations laterales", repetitions: accessory },
                     { nom: "Core (planche + hollow)", repetitions: "3x30-45s" },
                 ],
             },
@@ -215,19 +224,18 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
         return repeatPattern(base, ctx.sessionsPerWeek);
     }
 
-    // PPL par défaut
     const base: Seance[] = [
         {
             id: 1,
             titre: "Push",
             objectif: goalLabel,
-            niveau: "Intermédiaire",
+            niveau: "Intermediaire",
             duree: 55,
             image: "/images/push.jpg",
             exercices: [
-                { nom: "Développé couché", repetitions: reps },
-                { nom: "Développé incliné haltères", repetitions: reps },
-                { nom: "Élévations latérales", repetitions: accessory },
+                { nom: "Developpe couche", repetitions: reps },
+                { nom: "Developpe incline halteres", repetitions: reps },
+                { nom: "Elevations laterales", repetitions: accessory },
                 { nom: "Dips ou pompes", repetitions: accessory },
                 { nom: "Extensions triceps", repetitions: accessory },
             ],
@@ -236,13 +244,13 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
             id: 2,
             titre: "Pull",
             objectif: goalLabel,
-            niveau: "Intermédiaire",
+            niveau: "Intermediaire",
             duree: 55,
             image: "/images/pull.jpg",
             exercices: [
                 { nom: "Tractions / tirage vertical", repetitions: reps },
                 { nom: "Rowing barre", repetitions: reps },
-                { nom: "Rowing unilatéral", repetitions: accessory },
+                { nom: "Rowing unilateral", repetitions: accessory },
                 { nom: "Curl biceps", repetitions: accessory },
                 { nom: "Face pulls", repetitions: accessory },
             ],
@@ -251,12 +259,12 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
             id: 3,
             titre: "Legs",
             objectif: goalLabel,
-            niveau: "Intermédiaire",
+            niveau: "Intermediaire",
             duree: 60,
             image: "/images/legs.jpg",
             exercices: [
                 { nom: "Squat ou presse", repetitions: reps },
-                { nom: "Soulevé de terre jambes tendues", repetitions: reps },
+                { nom: "Souleve de terre jambes tendues", repetitions: reps },
                 { nom: "Fentes bulgares", repetitions: accessory },
                 { nom: "Leg curl", repetitions: accessory },
                 { nom: "Mollets debout", repetitions: accessory },
@@ -265,14 +273,35 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
     ];
     return repeatPattern(base, ctx.sessionsPerWeek);
 }
+function loadLocalPlan(): StoredPlan | null {
+    if (typeof window === "undefined") return null;
+    try {
+        const raw = localStorage.getItem(LOCAL_PLAN_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? (parsed as StoredPlan) : null;
+    } catch {
+        return null;
+    }
+}
+
+function saveLocalPlan(plan: StoredPlan) {
+    if (typeof window === "undefined") return;
+    try {
+        localStorage.setItem(LOCAL_PLAN_KEY, JSON.stringify(plan));
+    } catch {
+        /* ignore localStorage errors */
+    }
+}
 
 export default function SeancesPage() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
+    const [userId, setUserId] = useState<string | null>(null);
     const [seances, setSeances] = useState<Seance[]>([]);
     const [titre, setTitre] = useState("");
     const [objectif, setObjectif] = useState("Musculation");
-    const [niveau, setNiveau] = useState("Débutant");
+    const [niveau, setNiveau] = useState("Debutant");
     const [duree, setDuree] = useState<number>(30);
     const [image, setImage] = useState("");
     const [exercices, setExercices] = useState<Exercice[]>([{ nom: "", repetitions: "" }]);
@@ -280,18 +309,33 @@ export default function SeancesPage() {
     const [planType, setPlanType] = useState<TrainingPlanType>("UPPER_LOWER");
     const [goalCode, setGoalCode] = useState<GoalCode>("GET_BACK_IN_SHAPE");
     const [suggestionNote, setSuggestionNote] = useState<string | null>(null);
+    const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
     const router = useRouter();
 
     useEffect(() => {
+        const cached = loadLocalPlan();
+        if (!cached) return;
+        if (typeof cached.sessionsPerWeek === "number") setSessionsPerWeek(cached.sessionsPerWeek);
+        if (cached.planType) setPlanType(cached.planType);
+        if (cached.goalCode) setGoalCode(cached.goalCode);
+        if (Array.isArray(cached.seances)) setSeances(cached.seances);
+        if (typeof cached.savedNote === "string") setSuggestionNote(cached.savedNote);
+    }, []);
+    useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (!firebaseUser) {
+                setUserId(null);
+                setSeances([]);
                 router.push("/connexion");
                 return;
             }
 
+            setUserId(firebaseUser.uid);
+
             try {
                 const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+
                 if (userDoc.exists()) {
                     const data = userDoc.data() as UserProfile;
                     setProfile({ photoUrl: data.photoUrl });
@@ -301,9 +345,11 @@ export default function SeancesPage() {
                     if (typeof sessions === "number" && sessions > 0) setSessionsPerWeek(sessions);
                     if (plan) setPlanType(plan);
                     if (goal) setGoalCode(goal);
+                    if (Array.isArray((data as any).training?.seances)) setSeances((data as any).training?.seances);
+                    if (typeof (data as any).training?.savedNote === "string") setSuggestionNote((data as any).training?.savedNote);
                 }
             } catch (err) {
-                console.error("Erreur récupération profil :", err);
+                console.error("Erreur recuperation profil :", err);
             } finally {
                 setLoading(false);
             }
@@ -312,17 +358,14 @@ export default function SeancesPage() {
         return () => unsubscribe();
     }, [router]);
 
-    // ➕ Ajouter un exercice
     const ajouterExercice = () => setExercices([...exercices, { nom: "", repetitions: "" }]);
 
-    // 🔄 Modifier un exercice
     const handleExerciceChange = (index: number, field: keyof Exercice, value: string) => {
         const newExercices = [...exercices];
         newExercices[index][field] = value;
         setExercices(newExercices);
     };
 
-    // ➕ Ajouter la séance
     const ajouterSeance = (e: React.FormEvent) => {
         e.preventDefault();
         if (!titre.trim()) return alert("Le titre est obligatoire !");
@@ -335,10 +378,12 @@ export default function SeancesPage() {
             image: image || "/images/seance-default.jpg",
             exercices: exercices.filter((ex) => ex.nom.trim() !== ""),
         };
-        setSeances([...seances, nouvelleSeance]);
+        const nextSeances = [...seances, nouvelleSeance];
+        setSeances(nextSeances);
+        persistProgram(nextSeances, "manual");
         setTitre("");
         setObjectif("Musculation");
-        setNiveau("Débutant");
+        setNiveau("Debutant");
         setDuree(30);
         setImage("");
         setExercices([{ nom: "", repetitions: "" }]);
@@ -351,43 +396,86 @@ export default function SeancesPage() {
             goal: goalCode,
         });
         setSeances(suggested);
-        setSuggestionNote(
-            `Programme ${planType} - ${sessionsPerWeek} séances (${GOAL_LABELS[goalCode]}) généré automatiquement.`
-        );
+        const note = `Programme ${planType} - ${sessionsPerWeek} seances (${GOAL_LABELS[goalCode]}) genere automatiquement.`;
+        setSuggestionNote(note);
+        persistProgram(suggested, "auto", note);
+    };
+    const persistProgram = async (items: Seance[], source: "auto" | "manual", noteOverride?: string) => {
+        const savedNote =
+            noteOverride ||
+            (source === "auto"
+                ? `Programme ${planType} - ${sessionsPerWeek} seances (${GOAL_LABELS[goalCode]}) genere automatiquement.`
+                : "Programme personnalise sauvegarde");
+
+        saveLocalPlan({
+            sessionsPerWeek,
+            planType,
+            goalCode,
+            seances: items,
+            savedNote,
+        });
+
+        if (!userId) {
+            setSaveStatus("Connectez-vous pour sauvegarder votre programme.");
+            return;
+        }
+        setSaveStatus("Sauvegarde en cours...");
+        try {
+            await setDoc(
+                doc(db, "users", userId),
+                {
+                    training: {
+                        sessionsPerWeek,
+                        planType,
+                        seances: items,
+                        savedNote,
+                        updatedAt: serverTimestamp(),
+                    },
+                    nutrition: { goalCode },
+                },
+                { merge: true }
+            );
+
+            setSaveStatus("Programme enregistre dans votre compte.");
+        } catch (err) {
+            console.error("Erreur sauvegarde programme :", err);
+            setSaveStatus("Impossible de sauvegarder le programme pour le moment.");
+        }
     };
 
-    // ❌ Supprimer séance
-    const supprimerSeance = (id: number) => setSeances(seances.filter((s) => s.id !== id));
+    const supprimerSeance = (id: number) => {
+        const next = seances.filter((s) => s.id !== id);
+        setSeances(next);
+        persistProgram(next, "manual");
+    };
 
-    // 🧮 Récapitulatif
     const totalDuree = seances.reduce((acc, s) => acc + s.duree, 0);
     const dureeMoyenne = seances.length ? Math.round(totalDuree / seances.length) : 0;
 
     if (loading) return <div>Chargement...</div>;
 
     return (
-        <div className="relative min-h-screen overflow-hidden  font-sans text-[#333]">
+        <div className="relative min-h-screen overflow-hidden font-sans text-[#333]">
             <Nav photoUrl={profile?.photoUrl} />
             <PatternBackground />
 
             <main className="p-8 flex flex-col items-center pt-24 pb-16 animate-page-enter">
-                {/* Titre principal */}
-                <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-md border border-black/5 mb-6">
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-md border border-black/5 mb-6 w-full max-w-6xl">
                     <h1 className="text-4xl font-bold text-[#39393A] my-6 animate-card-rise animate-delay-1">
-                        🏋️‍♂️ Mes Programmes d’Entraînement
-                    </h1> {/* Section Récapitulatif */}
+                        Mes Programmes d'Entrainement
+                    </h1>
                     <section className="bg-white border border-[#FCAB10]/30 rounded-2xl shadow-lg w-full max-w-3xl p-6 mb-10 flex justify-between items-center text-center animate-card-rise animate-delay-2">
                         <div>
                             <p className="text-2xl font-bold text-[#FCAB10]">{seances.length}</p>
-                            <p className="text-gray-600">Séances créées</p>
+                            <p className="text-gray-600">Seances creees</p>
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-[#FCAB10]">{dureeMoyenne} min</p>
-                            <p className="text-gray-600">Durée moyenne</p>
+                            <p className="text-gray-600">Duree moyenne</p>
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-[#FCAB10]">{totalDuree} min</p>
-                            <p className="text-gray-600">Durée totale</p>
+                            <p className="text-gray-600">Duree totale</p>
                         </div>
                     </section>
 
@@ -395,11 +483,11 @@ export default function SeancesPage() {
                         <div className="flex flex-col gap-3">
                             <h2 className="text-xl font-semibold text-[#39393A]">Proposition automatique</h2>
                             <p className="text-sm text-[#333]/80">
-                                Ajuste ici si besoin (même si ton profil n'est pas renseigné) puis génére un plan clé en main.
+                                Ajuste ici si besoin (meme si ton profil n'est pas renseigne) puis genere un plan cle en main.
                             </p>
                             <div className="grid gap-3 sm:grid-cols-3">
                                 <label className="text-sm font-medium text-[#39393A]">
-                                    Séances / semaine
+                                    Seances / semaine
                                     <input
                                         type="number"
                                         min={2}
@@ -432,7 +520,7 @@ export default function SeancesPage() {
                                         <option value="GET_BACK_IN_SHAPE">Reprise en forme</option>
                                         <option value="MASS_GAIN">Prise de masse</option>
                                         <option value="MUSCLE_MAINTAIN">Maintenance musculaire</option>
-                                        <option value="CUTTING">SÇùche</option>
+                                        <option value="CUTTING">Seche</option>
                                     </select>
                                 </label>
                             </div>
@@ -445,26 +533,33 @@ export default function SeancesPage() {
                                     Proposer un programme
                                 </button>
                                 <span className="text-xs text-[#333]/70">
-                                    Programme {planType} - {sessionsPerWeek} séances ({GOAL_LABELS[goalCode]}) prêt à l'usage.
+                                    Programme {planType} - {sessionsPerWeek} seances ({GOAL_LABELS[goalCode]}) pret a l'usage.
                                 </span>
                             </div>
-                            {suggestionNote && (
-                                <div className="text-xs text-[#333]/70">
-                                    {suggestionNote}
+                            {suggestionNote && <div className="text-xs text-[#333]/70">{suggestionNote}</div>}
+                            {saveStatus && (
+                                <div
+                                    className={`text-xs ${
+                                        saveStatus.includes("Impossible")
+                                            ? "text-red-600"
+                                            : saveStatus.includes("enregistre")
+                                            ? "text-green-600"
+                                            : "text-[#333]/70"
+                                    }`}
+                                >
+                                    {saveStatus}
                                 </div>
                             )}
                         </div>
                     </section>
-
-                    {/* Formulaire */}
                     <form
                         onSubmit={ajouterSeance}
-                        className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-2xl border border-[#FCAB10]/20 space-y-6 animate-card-rise animate-delay-3 "
+                        className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-2xl border border-[#FCAB10]/20 space-y-6 animate-card-rise animate-delay-3"
                     >
-                        <h2 className="text-2xl font-semibold text-[#39393A] mb-4">➕ Créer une nouvelle séance</h2>
+                        <h2 className="text-2xl font-semibold text-[#39393A] mb-4">Creer une nouvelle seance</h2>
 
                         <div>
-                            <label className="font-semibold text-[#39393A]">Nom de la séance</label>
+                            <label className="font-semibold text-[#39393A]">Nom de la seance</label>
                             <input
                                 type="text"
                                 value={titre}
@@ -496,16 +591,16 @@ export default function SeancesPage() {
                                     onChange={(e) => setNiveau(e.target.value)}
                                     className="w-full mt-1 border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-[#FCAB10]"
                                 >
-                                    <option>Débutant</option>
-                                    <option>Intermédiaire</option>
-                                    <option>Avancé</option>
+                                    <option>Debutant</option>
+                                    <option>Intermediaire</option>
+                                    <option>Avance</option>
                                 </select>
                             </div>
                         </div>
 
                         <div className="flex gap-4">
                             <div className="w-1/2">
-                                <label className="font-semibold text-[#39393A]">Durée (minutes)</label>
+                                <label className="font-semibold text-[#39393A]">Duree (minutes)</label>
                                 <input
                                     type="number"
                                     value={duree}
@@ -528,7 +623,6 @@ export default function SeancesPage() {
                             </div>
                         </div>
 
-                        {/* Exercices */}
                         <div>
                             <label className="font-semibold text-[#39393A] block mb-2">Liste des exercices :</label>
                             {exercices.map((ex, i) => (
@@ -555,11 +649,10 @@ export default function SeancesPage() {
                         </div>
 
                         <button type="submit" className="w-full bg-[#FCAB10] text-white font-semibold py-2 rounded-lg hover:bg-[#e69a0d] transition">
-                            Créer la séance
+                            Creer la seance
                         </button>
                     </form>
 
-                    {/* Liste des séances */}
                     <section className="w-full max-w-4xl mt-10 space-y-6 animate-card-rise" style={{ animationDelay: "0.4s" }}>
                         {seances.map((s, index) => (
                             <div
@@ -571,11 +664,11 @@ export default function SeancesPage() {
                                     <img src={s.image} alt={s.titre} className="w-32 h-32 object-cover rounded-xl border border-[#FCAB10]/20" />
                                     <div className="flex-1">
                                         <h3 className="text-2xl font-bold text-[#39393A]">{s.titre}</h3>
-                                        <p className="text-sm text-gray-600 mb-1">🎯 {s.objectif} | 💪 {s.niveau}</p>
+                                        <p className="text-sm text-gray-600 mb-1">Objectif: {s.objectif} | Niveau: {s.niveau}</p>
                                         <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
                                             <div className="bg-[#FCAB10] h-3 rounded-full" style={{ width: `${Math.min((s.duree / 120) * 100, 100)}%` }} />
                                         </div>
-                                        <p className="text-sm text-gray-700 mt-1">⏱️ {s.duree} minutes</p>
+                                        <p className="text-sm text-gray-700 mt-1">{s.duree} minutes</p>
                                     </div>
                                     <button onClick={() => supprimerSeance(s.id)} className="bg-[#FF3D00] text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
                                         Supprimer
@@ -587,7 +680,7 @@ export default function SeancesPage() {
                                     <ul className="list-disc list-inside text-sm text-gray-700">
                                         {s.exercices.map((ex, i) => (
                                             <li key={i}>
-                                                {ex.nom} – {ex.repetitions}
+                                                {ex.nom} - {ex.repetitions}
                                             </li>
                                         ))}
                                     </ul>
@@ -597,17 +690,14 @@ export default function SeancesPage() {
 
                         {seances.length === 0 && (
                             <p className="text-center text-gray-500 mt-6 animate-card-rise" style={{ animationDelay: "0.45s" }}>
-                                Aucune séance enregistrée. Commence à créer ton premier programme 💪
+                                Aucune seance enregistree. Commence a creer ton premier programme !
                             </p>
                         )}
                     </section>
                 </div>
-
-
-
-            </main >
+            </main>
 
             <Footer />
-        </div >
+        </div>
     );
 }
