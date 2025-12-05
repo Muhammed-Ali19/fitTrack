@@ -124,7 +124,7 @@ const ProfileCard: React.FC<{
             : `${Math.round(dailyCalories)} kcal`;
 
     return (
-        <section className={`mx-auto w-[min(1100px,92%)] mt-10 ${motionBase} ${containerMotion}`}>
+        <main className="relative z-10 mx-auto grid w-[90%] max-w-5xl place-items-center py-16 animate-page-enter">
             <div
                 className={`rounded-3xl bg-white/90 backdrop-blur-sm shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-black/5 p-6 sm:p-10 relative overflow-hidden ${motionBase} ${childMotion}`}
                 style={getDelayStyle(60)}
@@ -190,7 +190,8 @@ const ProfileCard: React.FC<{
                     </button>
                 </div>
             </div>
-        </section>
+        </main>
+
     );
 };
 

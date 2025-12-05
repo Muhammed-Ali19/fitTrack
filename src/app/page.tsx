@@ -247,7 +247,7 @@ export default function FitTrackHome() {
 
   return (
 
-    <div className="relative min-h-screen overflow-hidden  font-sans text-[#333333]">
+    <div className="relative min-h-screen  font-sans text-[#333333]">
       {/* <AnimatedBackground /> */}
 
 
@@ -337,8 +337,9 @@ export default function FitTrackHome() {
 
             <button
               type="submit"
+
               disabled={saving}
-              className="mt-2 inline-flex h-12 items-center justify-center rounded-xl bg-[#FCAB10] px-6 text-base font-semibold text-[#F5F5F5] shadow hover:brightness-95 active:translate-y-px active:shadow-sm disabled:opacity-60"
+              className="button mt-2 inline-flex h-12 items-center justify-center rounded-xl bg-[#FCAB10] px-6 text-base font-semibold text-[#F5F5F5] shadow hover:brightness-95 active:translate-y-px active:shadow-sm disabled:opacity-60"
             >
               {saving ? "Sauvegarde..." : "Calculer"}
             </button>
@@ -450,8 +451,8 @@ export default function FitTrackHome() {
           )}
         </form>
       </main>
-
       <Footer />
+
     </div >
   );
 }

@@ -1,15 +1,15 @@
+/* TAILWIND */
 @import "tailwindcss";
 
+/* ROOT THEME */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --background: #F5F5F5;
+  --foreground: #333333;
+  --primary: #FCAB10;
+  --secondary: #39393A;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Easing global */
+  --ease-out: cubic-bezier(.25, .1, .25, 1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,37 +19,228 @@
   }
 }
 
+/* -----------------------------------------
+Base & FIXES DU PATTERN
+----------------------------------------- */
+
+/* FIX 1: Permet au body de servir de référence et de s'étendre */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+  position: relative;
+  /* Référence pour le positionnement absolu /
+min-height: 100%; / S'étend sur toute la hauteur du contenu */
 }
 
-@keyframes pageFade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+/* THEME TAILWIND */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
-@keyframes riseUp {
+/* -----------------------------------------
+BUTTON PREMIUM V3
+----------------------------------------- */
+
+.button {
+  cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 14px 28px;
+  font-size: 1.1rem;
+  font-weight: 600;
+
+  border-radius: 16px;
+  border: none;
+  outline: none;
+
+  background: linear-gradient(135deg,
+      var(--primary),
+      #fcba10);
+  color: #fff;
+
+  box-shadow:
+    0 4px 10px rgba(252, 171, 16, 0.35),
+    inset 0 1px 2px rgba(255, 255, 255, 0.25);
+
+  transition:
+    transform 0.18s var(--ease-out),
+    box-shadow 0.25s var(--ease-out),
+    background 0.3s var(--ease-out);
+}
+
+/* Hover — effet Apple-like */
+.button:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 8px 22px rgba(252, 171, 16, 0.45),
+    inset 0 1px 3px rgba(255, 255, 255, 0.35);
+  background: linear-gradient(135deg,
+      #ffd27f,
+      var(--primary));
+}
+
+/* Pressed — feedback tactile */
+.button:active {
+  transform: scale(0.97);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.25),
+    inset 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+
+/* Highlight subtil dynamique */
+.button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+
+  background: radial-gradient(circle at 80% 0%,
+      rgba(255, 255, 255, 0.35),
+      transparent 60%);
+
+  opacity: 0.4;
+  pointer-events: none;
+  transition: opacity 0.25s var(--ease-out);
+}
+
+.button:hover::after {
+  opacity: 0.7;
+}
+
+.blob1 {
+  position: absolute;
+  width: 70px;
+  height: 100%;
+  border-radius: 16px;
+  bottom: 0;
+  left: 0;
+  background: radial-gradient(circle 60px at 0% 100%,
+      #3fe9ff,
+      #0000ff80,
+      transparent);
+  box-shadow: -10px 10px 30px #0051ff2d;
+}
+
+.inner {
+  padding: 14px 25px;
+  border-radius: 14px;
+  color: #fff;
+  z-index: 3;
+  position: relative;
+  background: radial-gradient(circle 80px at 80% -50%, #777777, #0f1111);
+}
+
+.inner::before {
+  content: "";
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  border-radius: 14px;
+  background: radial-gradient(circle 60px at 0% 100%,
+      #00e1ff1a,
+      #0000ff11,
+      transparent);
+  position: absolute;
+}
+
+/* -----------------------------------------
+INPUTS FOCUS
+----------------------------------------- */
+
+input,
+select {
+  transition:
+    border-color .25s,
+    box-shadow .25s,
+    background .25s;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(252, 171, 16, 0.20);
+}
+
+/* -----------------------------------------
+CARD STYLE
+----------------------------------------- */
+
+.card-soft {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 1rem;
+}
+
+/* -----------------------------------------
+SCROLLBAR
+----------------------------------------- */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F5F5;
+}
+
+/* -----------------------------------------
+ANIMATIONS UNIQUES
+----------------------------------------- */
+
+@keyframes page-enter {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-@keyframes cardPop {
+@keyframes card-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes card-pop {
   from {
     opacity: 0;
     transform: translateY(20px) scale(0.96);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -58,17 +249,17 @@ body {
 
 .animate-page-enter {
   opacity: 0;
-  animation: pageFade 0.7s ease-out forwards;
+  animation: page-enter 0.7s var(--ease-out) forwards;
 }
 
 .animate-card-rise {
   opacity: 0;
-  animation: riseUp 0.8s ease-out forwards;
+  animation: card-rise 0.7s ease-out forwards;
 }
 
 .animate-card-pop {
   opacity: 0;
-  animation: cardPop 0.7s ease-out forwards;
+  animation: card-pop 0.7s ease-out forwards;
 }
 
 .animate-delay-1 {
@@ -87,7 +278,73 @@ body {
   animation-delay: 0.4s;
 }
 
+/* Pattern V2 — Sobriété + Style + Minimalisme premium */
+
+.pattern-container {
+  width: 100%;
+  /* FIX 2: Utiliser 'absolute' pour s'étendre sur toute la hauteur du body */
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -10;
+
+  /* Assurer que la hauteur s'adapte au contenu du body */
+  height: auto;
+  min-height: 100%;
+
+  --bg: hsl(39, 98%, 53%);
+  --fg: #F17105;
+  --accent: #fcab10;
+
+  background:
+    radial-gradient(circle at 0% 100%, #fcab1010, transparent 100%),
+    radial-gradient(circle at 0% 70%, #00e1ff0b, transparent 60%),
+    repeating-linear-gradient(to right,
+      transparent 0,
+      transparent 96%,
+      #ffffff08 96.5%,
+      transparent 97%),
+    linear-gradient(135deg,
+      var(--fg) 0%,
+      #1c1f27 0%,
+      var(--bg) 100%);
+
+  background-size: auto, auto, 120px, cover;
+  /* Crucial pour l'effet de parallaxe du composant React */
+  background-attachment: fixed;
+
+  backdrop-filter: blur(0.3px);
+  filter: contrast(102%) brightness(102%);
+  pointer-events: none;
+
+
+}
+
+/* Grain subtil premium (CORRIGÉ) */
+.pattern-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  background: url("data:image/svg+xml,\
+<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' fill='rgba(255,255,255,0.03)'>\
+  <rect width='2' height='2'/>\
+</svg>"
+    );
+
+  /* FIX 3: background-attachment: fixed pour que le grain s'étende visuellement sur tout le défilement */
+  background-attachment: fixed;
+
+  mix-blend-mode: soft-light;
+  opacity: 0.6;
+
+
+}
+
+/* Reduced motion support (inchangé) */
 @media (prefers-reduced-motion: reduce) {
+
   .animate-page-enter,
   .animate-card-rise,
   .animate-card-pop {

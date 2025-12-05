@@ -17,7 +17,7 @@ const PatternBackground: React.FC = () => {
     return (
         <div
             className="pattern-container"
-            style={{ backgroundPosition: `center ${offsetY}px` }}
+
         />
     );
 };

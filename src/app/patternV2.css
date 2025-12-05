@@ -1,13 +1,66 @@
+/* Pattern V2 — Cohérent sur toutes les pages */
+
 .pattern-container {
+    /* SOLUTION: Position fixed qui couvre toujours tout l'écran */
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
     z-index: -10;
+
+    /* Variables de couleur */
+    --bg: #fcab10;
+    --fg: #F17105;
+    --accent: #fcab10;
+
+    /* Dégradés et motifs */
+    background:
+        repeating-linear-gradient(to right,
+            transparent 0,
+            transparent 100%,
+            #ffffff08 0%,
+            transparent 100%),
+        linear-gradient(135deg,
+            var(--fg) 0%,
+            #F17105 0%,
+            var(--bg) 100%);
+
+    background-size: auto, auto, 120px, cover;
+    background-attachment: fixed;
+
+    /* Effets visuels subtils */
+    backdrop-filter: blur(0.3px);
+    filter: contrast(102%) brightness(102%);
+}
+
+/* Grain subtil premium (optionnel) */
+.pattern-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
+    background-image:
+        repeating-linear-gradient(0deg,
+            transparent,
+            transparent 2px,
+            rgba(255, 255, 255, 0.03) 2px,
+            rgba(255, 255, 255, 0.03) 4px);
+    pointer-events: none;
+    opacity: 0.5;
+}
 
-    background-image: url("/img/Pattern-React.jpg");
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center 0;
-    background-color: #333;
+/* Alternative: Si vous voulez que le pattern défile avec la page */
+.pattern-container.scrolling {
+    position: absolute;
+    height: 100%;
+    min-height: 100vh;
+}
+
+/* Pour les pages avec beaucoup de contenu */
+body {
+    position: relative;
+    min-height: 100vh;
 }
