@@ -1,56 +1,237 @@
-/* Pattern V2 — Cohérent sur toutes les pages */
+/* Pattern V2 — Multi-couleurs avec animations stylées */
+
+@keyframes gradientFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes colorShift {
+    0% {
+        filter: contrast(102%) brightness(102%) hue-rotate(0deg);
+    }
+
+    33% {
+        filter: contrast(105%) brightness(108%) hue-rotate(15deg);
+    }
+
+    66% {
+        filter: contrast(100%) brightness(105%) hue-rotate(-10deg);
+    }
+
+    100% {
+        filter: contrast(102%) brightness(102%) hue-rotate(0deg);
+    }
+}
+
+@keyframes shimmer {
+
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: translateX(-100%) skewX(-15deg);
+    }
+
+    50% {
+        opacity: 0.6;
+        transform: translateX(200%) skewX(-15deg);
+    }
+}
+
+@keyframes floatingOrbs {
+
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.4;
+    }
+
+    33% {
+        transform: translate(30px, -40px) scale(1.1);
+        opacity: 0.6;
+    }
+
+    66% {
+        transform: translate(-30px, 40px) scale(0.9);
+        opacity: 0.5;
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.92;
+        transform: scale(1.03);
+    }
+}
 
 .pattern-container {
-    /* SOLUTION: Position fixed qui couvre toujours tout l'écran */
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100vh;
     z-index: -10;
+    overflow: hidden;
 
-    /* Variables de couleur */
-    --bg: #fcab10;
-    --fg: #F17105;
-    --accent: #fcab10;
+    /* Palette étendue */
+    --orange-primary: #fcab10;
+    --orange-dark: #F17105;
+    --orange-light: #FFD166;
+    --coral: #FF6B6B;
+    --peach: #FF8C42;
+    --gold: #F4A261;
+    --amber: #E76F51;
+    --sunset: #FF9E80;
 
-    /* Dégradés et motifs */
+    /* Dégradé multi-couleurs animé */
     background:
-        repeating-linear-gradient(to right,
-            transparent 0,
-            transparent 100%,
-            #ffffff08 0%,
-            transparent 100%),
         linear-gradient(135deg,
-            var(--fg) 0%,
-            #F17105 0%,
-            var(--bg) 100%);
+            var(--orange-dark) 0%,
+            var(--coral) 15%,
+            var(--peach) 30%,
+            var(--orange-primary) 45%,
+            var(--gold) 60%,
+            var(--amber) 75%,
+            var(--sunset) 90%,
+            var(--orange-light) 100%);
 
-    background-size: auto, auto, 120px, cover;
+    background-size: 400% 400%;
     background-attachment: fixed;
 
-    /* Effets visuels subtils */
-    backdrop-filter: blur(0.3px);
-    filter: contrast(102%) brightness(102%);
+    /* Animation principale fluide */
+    animation: gradientFlow 20s ease-in-out infinite,
+        colorShift 15s ease-in-out infinite;
+
+    backdrop-filter: blur(0.5px);
 }
 
-/* Grain subtil premium (optionnel) */
+/* Orbes flottants colorés */
 .pattern-container::before {
     content: '';
     position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 120%;
+    height: 120%;
+    background:
+        radial-gradient(circle at 20% 30%, var(--coral) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, var(--gold) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, var(--peach) 0%, transparent 45%),
+        radial-gradient(circle at 70% 20%, var(--sunset) 0%, transparent 35%),
+        radial-gradient(circle at 30% 80%, var(--amber) 0%, transparent 40%);
+    opacity: 0.4;
+    animation: floatingOrbs 25s ease-in-out infinite;
+    pointer-events: none;
+    mix-blend-mode: soft-light;
+}
+
+/* Effet shimmer (brillance qui traverse l'écran) */
+.pattern-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.3) 50%,
+            transparent 100%);
+    animation: shimmer 8s ease-in-out infinite;
+    pointer-events: none;
+    transform: skewX(-15deg);
+}
+
+/* Grain premium animé */
+body::before {
+    content: '';
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    height: 100vh;
+    z-index: -9;
     background-image:
         repeating-linear-gradient(0deg,
             transparent,
             transparent 2px,
-            rgba(255, 255, 255, 0.03) 2px,
-            rgba(255, 255, 255, 0.03) 4px);
+            rgba(255, 255, 255, 0.04) 2px,
+            rgba(255, 255, 255, 0.04) 4px);
     pointer-events: none;
     opacity: 0.5;
+    animation: pulse 12s ease-in-out infinite;
 }
+
+/* Particules lumineuses flottantes */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: -8;
+    background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+        radial-gradient(circle, rgba(255, 221, 102, 0.6) 1px, transparent 1px),
+        radial-gradient(circle, rgba(255, 140, 66, 0.6) 1px, transparent 1px);
+    background-size: 50px 50px, 80px 80px, 100px 100px;
+    background-position: 0 0, 20px 20px, 40px 40px;
+    opacity: 0.3;
+    animation: floatingOrbs 30s linear infinite;
+    pointer-events: none;
+}
+
+/* VARIANTES - Décommentez celle que vous préférez */
+
+/* OPTION 1: Coucher de soleil dynamique */
+/*
+.pattern-container {
+    animation: gradientFlow 12s ease-in-out infinite,
+               colorShift 10s ease-in-out infinite;
+}
+.pattern-container::before {
+    animation: floatingOrbs 15s ease-in-out infinite;
+    opacity: 0.6;
+}
+*/
+
+/* OPTION 2: Mode disco (rapide et coloré) */
+/*
+.pattern-container {
+    animation: gradientFlow 5s ease-in-out infinite,
+               colorShift 3s ease-in-out infinite;
+}
+.pattern-container::after {
+    animation: shimmer 3s ease-in-out infinite;
+}
+*/
+
+/* OPTION 3: Ambiance relaxante (très lent) */
+/*
+.pattern-container {
+    animation: gradientFlow 40s ease-in-out infinite,
+               colorShift 30s ease-in-out infinite;
+}
+.pattern-container::before {
+    animation: floatingOrbs 50s ease-in-out infinite;
+}
+*/
 
 /* Alternative: Si vous voulez que le pattern défile avec la page */
 .pattern-container.scrolling {
@@ -64,3 +245,46 @@ body {
     position: relative;
     min-height: 100vh;
 }
+
+/* Désactiver les animations si l'utilisateur préfère moins de mouvement */
+@media (prefers-reduced-motion: reduce) {
+
+    .pattern-container,
+    .pattern-container::before,
+    .pattern-container::after,
+    body::before,
+    body::after {
+        animation: none !important;
+    }
+}
+
+/* BONUS: Effet aurore boréale */
+@keyframes aurora {
+
+    0%,
+    100% {
+        background-position: 0% 50%, 100% 50%;
+        opacity: 0.5;
+    }
+
+    25% {
+        background-position: 50% 0%, 50% 100%;
+        opacity: 0.7;
+    }
+
+    50% {
+        background-position: 100% 50%, 0% 50%;
+        opacity: 0.6;
+    }
+
+    75% {
+        background-position: 50% 100%, 50% 0%;
+        opacity: 0.8;
+    }
+}
+
+/* 
+.pattern-container::before {
+    animation: aurora 20s ease-in-out infinite;
+}
+*/
