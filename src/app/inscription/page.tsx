@@ -5,6 +5,7 @@ import Nav from "../components/Nav";
 import { auth, db } from "@/firebaseClient";
 import { OAuthProvider, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import PatternBackground from "../components/PatternV2";
 
 export default function InscriptionPage() {
     const [email, setEmail] = useState("");
@@ -116,7 +117,7 @@ export default function InscriptionPage() {
 
     return (
         <>
-            <div className="relative min-h-screen overflow-hidden bg-[#F5F5F5] font-sans text-[#333333]">
+            <div className="relative min-h-screen overflow-hidden  font-sans text-[#333333]">
                 <Nav />
                 <main className="min-h-screen flex flex-col items-center p-8 font-sans">
                     {/* FORMULAIRE D'INSCRIPTION */}
@@ -174,7 +175,7 @@ export default function InscriptionPage() {
                                 <option value="T-MAX 530">T-MAX 530</option>
                             </select>
 
-               <label className="mb-2 font-medium text-gray-700" htmlFor="birthDate">
+                            <label className="mb-2 font-medium text-gray-700" htmlFor="birthDate">
                                 Date de naissance
                             </label>
                             <input
@@ -280,6 +281,7 @@ export default function InscriptionPage() {
                         }
                     `}</style>
                 </main>
+                <div><PatternBackground /></div>
             </div>
         </>
     );

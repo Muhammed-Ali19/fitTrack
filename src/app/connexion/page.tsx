@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Nav from "../components/Nav";
 import { auth } from "@/firebaseClient";
 import { OAuthProvider, GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import PatternBackground from "../components/PatternV2";
 
 export default function ConnexionPage() {
     const [email, setEmail] = useState("");
@@ -46,7 +47,7 @@ export default function ConnexionPage() {
 
     return (
         <>
-            <div className="relative min-h-screen overflow-hidden bg-[#F5F5F5] font-sans text-[#333333]">
+            <div className="relative min-h-screen overflow-hidden font-sans text-[#333333]">
                 <Nav />
                 <main className="min-h-screen flex flex-col items-center p-8 font-sans ">
                     {/* FORMULAIRE DE CONNEXION */}
@@ -100,8 +101,8 @@ export default function ConnexionPage() {
                             <a href="/inscription">Vous n'avez pas de compte ? Inscrivez-vous</a>
                         </form>
                     </section>
-
                 </main>
+                <PatternBackground />
             </div>
 
         </>
