@@ -5,7 +5,7 @@ import Nav from "../components/Nav";
 import Footer from "../components/Footer";
 import { auth, db } from "@/firebaseClient";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, doc, getDoc, getDocs, orderBy, query, updateDoc } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, updateDoc } from "firebase/firestore";
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -43,6 +43,7 @@ type TrainingLog = {
     seanceTitle?: string;
     volume?: number;
     exercisesCount?: number;
+    notes?: string | null;
 };
 
 export default function StatsPage() {
@@ -52,6 +53,15 @@ export default function StatsPage() {
     const [trainingLogs, setTrainingLogs] = useState<TrainingLog[]>([]);
     const [logsLoading, setLogsLoading] = useState(false);
     const [logsError, setLogsError] = useState<string | null>(null);
+    const [editingLogId, setEditingLogId] = useState<string | null>(null);
+    const [editLogForm, setEditLogForm] = useState<{ date: string; seanceTitle: string; volume: string; notes: string }>({
+        date: "",
+        seanceTitle: "",
+        volume: "",
+        notes: "",
+    });
+    const [rowSaving, setRowSaving] = useState(false);
+    const [rowDeleting, setRowDeleting] = useState<string | null>(null);
     const router = useRouter();
 
     const loadTrainingLogs = async (uid: string) => {
@@ -67,6 +77,7 @@ export default function StatsPage() {
                     seanceTitle: typeof data.seanceTitle === "string" ? data.seanceTitle : undefined,
                     volume: typeof data.volume === "number" ? data.volume : Number(data.volume) || 0,
                     exercisesCount: Array.isArray((data as any).exercises) ? (data as any).exercises.length : undefined,
+                    notes: typeof (data as any).notes === "string" ? (data as any).notes : undefined,
                 };
             });
             setTrainingLogs(items);
@@ -74,6 +85,61 @@ export default function StatsPage() {
             setLogsError(error instanceof Error ? error.message : "Impossible de charger les seances.");
         } finally {
             setLogsLoading(false);
+        }
+    };
+
+    const startEditLog = (log: TrainingLog) => {
+        setEditingLogId(log.id);
+        setEditLogForm({
+            date: log.date || "",
+            seanceTitle: log.seanceTitle || "",
+            volume: log.volume != null ? String(log.volume) : "",
+            notes: log.notes ? String(log.notes) : "",
+        });
+    };
+
+    const cancelEditLog = () => {
+        setEditingLogId(null);
+        setRowSaving(false);
+        setRowDeleting(null);
+    };
+
+    const saveEditLog = async () => {
+        if (!userId || !editingLogId) return;
+        setRowSaving(true);
+        setLogsError(null);
+        try {
+            const volume = Number(editLogForm.volume);
+            if (!Number.isFinite(volume) || volume < 0) {
+                throw new Error("Volume invalide.");
+            }
+            await updateDoc(doc(db, "users", userId, "trainingLogs", editingLogId), {
+                date: editLogForm.date || "",
+                seanceTitle: editLogForm.seanceTitle || "",
+                volume,
+                notes: editLogForm.notes || null,
+            });
+            await loadTrainingLogs(userId);
+            cancelEditLog();
+        } catch (error: unknown) {
+            setLogsError(error instanceof Error ? error.message : "Impossible de mettre à jour la séance.");
+        } finally {
+            setRowSaving(false);
+        }
+    };
+
+    const deleteLog = async (id: string) => {
+        if (!userId) return;
+        setRowDeleting(id);
+        setLogsError(null);
+        try {
+            await deleteDoc(doc(db, "users", userId, "trainingLogs", id));
+            await loadTrainingLogs(userId);
+            if (editingLogId === id) cancelEditLog();
+        } catch (error: unknown) {
+            setLogsError(error instanceof Error ? error.message : "Impossible de supprimer la séance.");
+        } finally {
+            setRowDeleting(null);
         }
     };
 
@@ -252,15 +318,93 @@ export default function StatsPage() {
                                             <th className="px-2 py-2">Seance</th>
                                             <th className="px-2 py-2">Volume total</th>
                                             <th className="px-2 py-2">Nb exos</th>
+                                            <th className="px-2 py-2">Notes</th>
+                                            <th className="px-2 py-2 text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {recentLogs.map((log) => (
                                             <tr key={log.id} className="border-t border-black/5 text-[#333333]/90">
-                                                <td className="px-2 py-2">{log.date || "-"}</td>
-                                                <td className="px-2 py-2">{log.seanceTitle || "Sans titre"}</td>
-                                                <td className="px-2 py-2">{log.volume != null ? Math.round(log.volume) : "-"}</td>
-                                                <td className="px-2 py-2">{log.exercisesCount ?? "-"}</td>
+                                                {editingLogId === log.id ? (
+                                                    <>
+                                                        <td className="px-2 py-2">
+                                                            <input
+                                                                type="date"
+                                                                value={editLogForm.date}
+                                                                onChange={(e) => setEditLogForm((prev) => ({ ...prev, date: e.target.value }))}
+                                                                className="h-9 w-full rounded-md border border-black/10 px-2 text-sm"
+                                                            />
+                                                        </td>
+                                                        <td className="px-2 py-2">
+                                                            <input
+                                                                type="text"
+                                                                value={editLogForm.seanceTitle}
+                                                                onChange={(e) => setEditLogForm((prev) => ({ ...prev, seanceTitle: e.target.value }))}
+                                                                className="h-9 w-full rounded-md border border-black/10 px-2 text-sm"
+                                                            />
+                                                        </td>
+                                                        <td className="px-2 py-2">
+                                                            <input
+                                                                type="number"
+                                                                value={editLogForm.volume}
+                                                                onChange={(e) => setEditLogForm((prev) => ({ ...prev, volume: e.target.value }))}
+                                                                className="h-9 w-full rounded-md border border-black/10 px-2 text-sm"
+                                                            />
+                                                        </td>
+                                                        <td className="px-2 py-2 text-[#333]/70">{log.exercisesCount ?? "-"}</td>
+                                                        <td className="px-2 py-2">
+                                                            <input
+                                                                type="text"
+                                                                value={editLogForm.notes}
+                                                                onChange={(e) => setEditLogForm((prev) => ({ ...prev, notes: e.target.value }))}
+                                                                placeholder="Notes"
+                                                                className="h-9 w-full rounded-md border border-black/10 px-2 text-sm"
+                                                            />
+                                                        </td>
+                                                        <td className="px-2 py-2 text-right space-x-2 whitespace-nowrap">
+                                                            <button
+                                                                type="button"
+                                                                onClick={saveEditLog}
+                                                                disabled={rowSaving}
+                                                                className="rounded-lg bg-[#FCAB10] px-3 py-1 text-white text-xs font-semibold disabled:opacity-60"
+                                                            >
+                                                                {rowSaving ? "Enregistrement..." : "Sauver"}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={cancelEditLog}
+                                                                className="rounded-lg border border-black/10 px-3 py-1 text-xs font-semibold text-[#39393A]"
+                                                            >
+                                                                Annuler
+                                                            </button>
+                                                        </td>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <td className="px-2 py-2">{log.date || "-"}</td>
+                                                        <td className="px-2 py-2">{log.seanceTitle || "Sans titre"}</td>
+                                                        <td className="px-2 py-2">{log.volume != null ? Math.round(log.volume) : "-"}</td>
+                                                        <td className="px-2 py-2">{log.exercisesCount ?? "-"}</td>
+                                                        <td className="px-2 py-2 text-[#333]/80">{log.notes || "-"}</td>
+                                                        <td className="px-2 py-2 text-right space-x-2 whitespace-nowrap">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => startEditLog(log)}
+                                                                className="rounded-lg border border-black/10 px-3 py-1 text-xs font-semibold text-[#39393A]"
+                                                            >
+                                                                Modifier
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => deleteLog(log.id)}
+                                                                disabled={rowDeleting === log.id}
+                                                                className="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 disabled:opacity-60"
+                                                            >
+                                                                {rowDeleting === log.id ? "Suppression..." : "Supprimer"}
+                                                            </button>
+                                                        </td>
+                                                    </>
+                                                )}
                                             </tr>
                                         ))}
                                     </tbody>

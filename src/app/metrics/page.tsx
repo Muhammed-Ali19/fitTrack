@@ -11,11 +11,13 @@ import {
   addDoc,
   collection,
   doc,
+  deleteDoc,
   getDoc,
   getDocs,
   limit,
   orderBy,
   query,
+  updateDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import {
@@ -78,6 +80,10 @@ export default function MetricsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<7 | 30>(7);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<FormState | null>(null);
+  const [rowSaving, setRowSaving] = useState(false);
+  const [rowDeleting, setRowDeleting] = useState<string | null>(null);
 
   // Auth + profil (taille pour IMC)
   useEffect(() => {
@@ -141,6 +147,8 @@ export default function MetricsPage() {
 
   const handleChange = (key: keyof FormState) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+  const handleEditChange = (key: keyof FormState) => (value: string) =>
+    setEditForm((prev) => (prev ? { ...prev, [key]: value } : prev));
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -188,6 +196,80 @@ export default function MetricsPage() {
       setError(err instanceof Error ? err.message : "Impossible d'enregistrer la métrique.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const startEdit = (entry: MetricEntry) => {
+    setEditingId(entry.id);
+    setError(null);
+    setEditForm({
+      measuredAt: entry.measuredAt || todayKey(),
+      weightKg: entry.weightKg != null ? String(entry.weightKg) : "",
+      waistCm: entry.waistCm != null ? String(entry.waistCm) : "",
+      sleepHours: entry.sleepHours != null ? String(entry.sleepHours) : "",
+      energyLevel: entry.energyLevel != null ? String(entry.energyLevel) : "",
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm(null);
+    setRowSaving(false);
+    setRowDeleting(null);
+  };
+
+  const handleUpdateRow = async () => {
+    if (!userId || !editingId || !editForm) return;
+    setRowSaving(true);
+    setError(null);
+    try {
+      const weight = Number(editForm.weightKg);
+      const waist = editForm.waistCm ? Number(editForm.waistCm) : undefined;
+      const sleep = editForm.sleepHours ? Number(editForm.sleepHours) : undefined;
+      const energy = editForm.energyLevel ? Number(editForm.energyLevel) : undefined;
+
+      if (!Number.isFinite(weight) || weight <= 0) throw new Error("Poids invalide.");
+      if (waist !== undefined && (!Number.isFinite(waist) || waist <= 0))
+        throw new Error("Tour de taille invalide.");
+      if (sleep !== undefined && (sleep < 0 || sleep > 24)) throw new Error("Sommeil invalide.");
+      if (energy !== undefined && (energy < 1 || energy > 10)) throw new Error("Ç%nergie 1 Çÿ 10.");
+
+      let bmi: number | undefined = undefined;
+      if (heightCm && heightCm > 0) {
+        const h = heightCm / 100;
+        bmi = Number((weight / (h * h)).toFixed(1));
+      }
+
+      await updateDoc(doc(db, "users", userId, "metrics", editingId), {
+        measuredAt: editForm.measuredAt,
+        weightKg: weight,
+        bmi: bmi ?? null,
+        waistCm: waist ?? null,
+        sleepHours: sleep ?? null,
+        energyLevel: energy ?? null,
+      });
+
+      await loadMetrics(userId);
+      cancelEdit();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Impossible de mettre Çÿ jour la mÇ¸trique.");
+    } finally {
+      setRowSaving(false);
+    }
+  };
+
+  const handleDeleteRow = async (id: string) => {
+    if (!userId) return;
+    setRowDeleting(id);
+    setError(null);
+    try {
+      await deleteDoc(doc(db, "users", userId, "metrics", id));
+      await loadMetrics(userId);
+      if (editingId === id) cancelEdit();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Impossible de supprimer la mÇ¸trique.");
+    } finally {
+      setRowDeleting(null);
     }
   };
 
@@ -431,25 +513,111 @@ export default function MetricsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead>
+                                <thead>
                   <tr className="text-[#39393A]/70">
                     <th className="px-2 py-2">Date</th>
                     <th className="px-2 py-2">Poids (kg)</th>
                     <th className="px-2 py-2">IMC</th>
                     <th className="px-2 py-2">T. taille (cm)</th>
                     <th className="px-2 py-2">Sommeil (h)</th>
-                    <th className="px-2 py-2">Énergie</th>
+                    <th className="px-2 py-2">Energie</th>
+                    <th className="px-2 py-2 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {metrics.slice(0, 30).map((m) => (
                     <tr key={m.id} className="border-t border-black/5 text-[#333333]/90">
-                      <td className="px-2 py-2">{m.measuredAt}</td>
-                      <td className="px-2 py-2">{m.weightKg ?? "-"}</td>
-                      <td className="px-2 py-2">{m.bmi ?? "-"}</td>
-                      <td className="px-2 py-2">{m.waistCm ?? "-"}</td>
-                      <td className="px-2 py-2">{m.sleepHours ?? "-"}</td>
-                      <td className="px-2 py-2">{m.energyLevel ?? "-"}</td>
+                      {editingId === m.id && editForm ? (
+                        <>
+                          <td className="px-2 py-2">
+                            <input
+                              type="date"
+                              value={editForm.measuredAt}
+                              onChange={(e) => handleEditChange("measuredAt")(e.target.value)}
+                              className="h-9 w-full rounded-md border border-black/10 px-2 text-sm"
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <input
+                              type="number"
+                              value={editForm.weightKg}
+                              onChange={(e) => handleEditChange("weightKg")(e.target.value)}
+                              className="h-9 w-full rounded-md border border-black/10 px-2 text-sm"
+                            />
+                          </td>
+                          <td className="px-2 py-2 text-[#333]/70">{m.bmi ?? "-"}</td>
+                          <td className="px-2 py-2">
+                            <input
+                              type="number"
+                              value={editForm.waistCm}
+                              onChange={(e) => handleEditChange("waistCm")(e.target.value)}
+                              className="h-9 w-full rounded-md border border-black/10 px-2 text-sm"
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <input
+                              type="number"
+                              step="0.25"
+                              value={editForm.sleepHours}
+                              onChange={(e) => handleEditChange("sleepHours")(e.target.value)}
+                              className="h-9 w-full rounded-md border border-black/10 px-2 text-sm"
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <input
+                              type="number"
+                              min={1}
+                              max={10}
+                              value={editForm.energyLevel}
+                              onChange={(e) => handleEditChange("energyLevel")(e.target.value)}
+                              className="h-9 w-full rounded-md border border-black/10 px-2 text-sm"
+                            />
+                          </td>
+                          <td className="px-2 py-2 text-right space-x-2 whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={handleUpdateRow}
+                              disabled={rowSaving}
+                              className="rounded-lg bg-[#FCAB10] px-3 py-1 text-white text-xs font-semibold disabled:opacity-60"
+                            >
+                              {rowSaving ? "Enregistrement..." : "Sauver"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelEdit}
+                              className="rounded-lg border border-black/10 px-3 py-1 text-xs font-semibold text-[#39393A]"
+                            >
+                              Annuler
+                            </button>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="px-2 py-2">{m.measuredAt}</td>
+                          <td className="px-2 py-2">{m.weightKg ?? "-"}</td>
+                          <td className="px-2 py-2">{m.bmi ?? "-"}</td>
+                          <td className="px-2 py-2">{m.waistCm ?? "-"}</td>
+                          <td className="px-2 py-2">{m.sleepHours ?? "-"}</td>
+                          <td className="px-2 py-2">{m.energyLevel ?? "-"}</td>
+                          <td className="px-2 py-2 text-right space-x-2 whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => startEdit(m)}
+                              className="rounded-lg border border-black/10 px-3 py-1 text-xs font-semibold text-[#39393A]"
+                            >
+                              Modifier
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteRow(m.id)}
+                              disabled={rowDeleting === m.id}
+                              className="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 disabled:opacity-60"
+                            >
+                              {rowDeleting === m.id ? "Suppression..." : "Supprimer"}
+                            </button>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -463,3 +631,5 @@ export default function MetricsPage() {
     </div>
   );
 }
+
+
