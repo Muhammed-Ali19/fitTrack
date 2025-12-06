@@ -4,7 +4,7 @@ import Nav from "../components/Nav";
 import Footer from "../components/Footer";
 import { auth, db } from "@/firebaseClient";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import PatternBackground from "../components/PatternV2";
 
@@ -41,7 +41,20 @@ type StoredPlan = {
     updatedAt?: unknown;
 };
 
+type SetEntry = { reps: string; weight: string };
+type SessionLogForm = {
+    date: string;
+    notes: string;
+    exercises: Record<number, SetEntry[]>;
+};
+
 const LOCAL_PLAN_KEY = "fittrack_training_plan";
+const todayKey = () => {
+    const d = new Date();
+    const m = `${d.getMonth() + 1}`.padStart(2, "0");
+    const day = `${d.getDate()}`.padStart(2, "0");
+    return `${d.getFullYear()}-${m}-${day}`;
+};
 
 const GOAL_LABELS: Record<GoalCode, string> = {
     MASS_GAIN: "Prise de masse",
@@ -310,6 +323,10 @@ export default function SeancesPage() {
     const [goalCode, setGoalCode] = useState<GoalCode>("GET_BACK_IN_SHAPE");
     const [suggestionNote, setSuggestionNote] = useState<string | null>(null);
     const [saveStatus, setSaveStatus] = useState<string | null>(null);
+    const [logForms, setLogForms] = useState<Record<number, SessionLogForm>>({});
+    const [logStatus, setLogStatus] = useState<Record<number, string | null>>({});
+    const [logSaving, setLogSaving] = useState<Record<number, boolean>>({});
+    const [logOpen, setLogOpen] = useState<Record<number, boolean>>({});
 
     const router = useRouter();
 
@@ -440,6 +457,100 @@ export default function SeancesPage() {
         } catch (err) {
             console.error("Erreur sauvegarde programme :", err);
             setSaveStatus("Impossible de sauvegarder le programme pour le moment.");
+        }
+    };
+
+    const buildDefaultLogForm = (seance: Seance): SessionLogForm => ({
+        date: todayKey(),
+        notes: "",
+        exercises: seance.exercices.reduce((acc, _ex, idx) => {
+            acc[idx] = [{ reps: "", weight: "" }];
+            return acc;
+        }, {} as Record<number, SetEntry[]>),
+    });
+
+    const toggleLogForm = (seance: Seance) => {
+        setLogForms((prev) => {
+            if (prev[seance.id]) return prev;
+            return { ...prev, [seance.id]: buildDefaultLogForm(seance) };
+        });
+        setLogOpen((prev) => ({ ...prev, [seance.id]: !prev[seance.id] }));
+    };
+
+    const updateLogMeta = (seanceId: number, key: "date" | "notes", value: string) => {
+        setLogForms((prev) => {
+            const current = prev[seanceId] ?? { date: todayKey(), notes: "", exercises: {} };
+            return { ...prev, [seanceId]: { ...current, [key]: value } };
+        });
+    };
+
+    const updateSetValue = (seanceId: number, exIndex: number, setIndex: number, field: keyof SetEntry, value: string) => {
+        setLogForms((prev) => {
+            const current = prev[seanceId] ?? { date: todayKey(), notes: "", exercises: {} };
+            const exSets = current.exercises[exIndex] ?? [{ reps: "", weight: "" }];
+            const nextSets = exSets.map((s, i) => (i === setIndex ? { ...s, [field]: value } : s));
+            const exercises = { ...current.exercises, [exIndex]: nextSets };
+            return { ...prev, [seanceId]: { ...current, exercises } };
+        });
+    };
+
+    const addSetRow = (seanceId: number, exIndex: number) => {
+        setLogForms((prev) => {
+            const current = prev[seanceId] ?? { date: todayKey(), notes: "", exercises: {} };
+            const exSets = current.exercises[exIndex] ?? [{ reps: "", weight: "" }];
+            const exercises = { ...current.exercises, [exIndex]: [...exSets, { reps: "", weight: "" }] };
+            return { ...prev, [seanceId]: { ...current, exercises } };
+        });
+    };
+
+    const saveSessionLog = async (seance: Seance) => {
+        if (!userId) {
+            setLogStatus((prev) => ({ ...prev, [seance.id]: "Connectez-vous pour enregistrer la seance." }));
+            return;
+        }
+        const form = logForms[seance.id] ?? buildDefaultLogForm(seance);
+
+        const exercisesPayload = seance.exercices.map((ex, idx) => {
+            const sets = (form.exercises[idx] ?? [{ reps: "", weight: "" }])
+                .map((s) => ({ reps: Number(s.reps) || 0, weight: Number(s.weight) || 0 }))
+                .filter((s) => s.reps > 0 || s.weight > 0);
+            return { name: ex.nom, sets };
+        });
+
+        const volume = exercisesPayload.reduce(
+            (total, ex) => total + ex.sets.reduce((acc, s) => acc + s.reps * (s.weight || 0), 0),
+            0
+        );
+
+        if (volume <= 0) {
+            setLogStatus((prev) => ({ ...prev, [seance.id]: "Renseignez au moins un set avec reps et poids." }));
+            return;
+        }
+
+        setLogSaving((prev) => ({ ...prev, [seance.id]: true }));
+        setLogStatus((prev) => ({ ...prev, [seance.id]: null }));
+
+        try {
+            await addDoc(collection(db, "users", userId, "trainingLogs"), {
+                seanceId: seance.id,
+                seanceTitle: seance.titre,
+                date: form.date || todayKey(),
+                volume,
+                planType,
+                goalCode,
+                sessionsPerWeek,
+                niveau: seance.niveau,
+                objectif: seance.objectif,
+                exercises: exercisesPayload,
+                notes: form.notes || null,
+                createdAt: serverTimestamp(),
+            });
+            setLogStatus((prev) => ({ ...prev, [seance.id]: "Seance enregistree." }));
+        } catch (err) {
+            console.error("Erreur sauvegarde seance :", err);
+            setLogStatus((prev) => ({ ...prev, [seance.id]: "Impossible d'enregistrer la seance pour le moment." }));
+        } finally {
+            setLogSaving((prev) => ({ ...prev, [seance.id]: false }));
         }
     };
 
@@ -670,9 +781,17 @@ export default function SeancesPage() {
                                         </div>
                                         <p className="text-sm text-gray-700 mt-1">{s.duree} minutes</p>
                                     </div>
-                                    <button onClick={() => supprimerSeance(s.id)} className="bg-[#FF3D00] text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
-                                        Supprimer
-                                    </button>
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            onClick={() => toggleLogForm(s)}
+                                            className="bg-[#FCAB10] text-white px-3 py-2 rounded-lg hover:brightness-95 transition"
+                                        >
+                                            {logOpen[s.id] ? "Fermer le suivi" : "Suivre cette seance"}
+                                        </button>
+                                        <button onClick={() => supprimerSeance(s.id)} className="bg-[#FF3D00] text-white px-3 py-2 rounded-lg hover:bg-red-600 transition">
+                                            Supprimer
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="px-6 pb-4">
@@ -685,6 +804,98 @@ export default function SeancesPage() {
                                         ))}
                                     </ul>
                                 </div>
+
+                                {logOpen[s.id] && (
+                                    <div className="px-6 pb-6 border-t border-[#FCAB10]/30 bg-[#FCAB10]/5">
+                                        {(() => {
+                                            const logForm = logForms[s.id] ?? buildDefaultLogForm(s);
+                                            return (
+                                                <div className="space-y-4">
+                                                    <div className="grid gap-3 sm:grid-cols-2">
+                                                        <label className="text-sm font-medium text-[#39393A]">
+                                                            Date
+                                                            <input
+                                                                type="date"
+                                                                value={logForm.date}
+                                                                onChange={(e) => updateLogMeta(s.id, "date", e.target.value)}
+                                                                className="mt-1 h-10 w-full rounded-lg border border-black/10 bg-white px-3 text-sm outline-none transition focus:border-[#FCAB10] focus:shadow-[0_0_0_2px_rgba(252,171,16,0.2)]"
+                                                            />
+                                                        </label>
+                                                        <label className="text-sm font-medium text-[#39393A]">
+                                                            Notes
+                                                            <input
+                                                                type="text"
+                                                                value={logForm.notes}
+                                                                onChange={(e) => updateLogMeta(s.id, "notes", e.target.value)}
+                                                                placeholder="RPE, sensations, etc."
+                                                                className="mt-1 h-10 w-full rounded-lg border border-black/10 bg-white px-3 text-sm outline-none transition focus:border-[#FCAB10] focus:shadow-[0_0_0_2px_rgba(252,171,16,0.2)]"
+                                                            />
+                                                        </label>
+                                                    </div>
+
+                                                    <div className="space-y-4">
+                                                        {s.exercices.map((ex, exIndex) => {
+                                                            const sets = logForm.exercises[exIndex] ?? [{ reps: "", weight: "" }];
+                                                            return (
+                                                                <div key={exIndex} className="rounded-xl border border-black/5 bg-white p-4 shadow-sm shadow-black/5">
+                                                                    <div className="flex items-center justify-between gap-3">
+                                                                        <div>
+                                                                            <p className="text-sm font-semibold text-[#39393A]">{ex.nom}</p>
+                                                                            <p className="text-xs text-[#333]/70">{ex.repetitions}</p>
+                                                                        </div>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => addSetRow(s.id, exIndex)}
+                                                                            className="text-xs font-semibold text-[#FCAB10] hover:underline"
+                                                                        >
+                                                                            + Ajouter une serie
+                                                                        </button>
+                                                                    </div>
+                                                                    <div className="mt-3 space-y-2">
+                                                                        {sets.map((set, setIndex) => (
+                                                                            <div key={setIndex} className="grid grid-cols-2 gap-2">
+                                                                                <input
+                                                                                    type="number"
+                                                                                    min={0}
+                                                                                    placeholder="Reps"
+                                                                                    value={set.reps}
+                                                                                    onChange={(e) => updateSetValue(s.id, exIndex, setIndex, "reps", e.target.value)}
+                                                                                    className="h-10 rounded-lg border border-black/10 bg-white px-3 text-sm outline-none transition focus:border-[#FCAB10] focus:shadow-[0_0_0_2px_rgba(252,171,16,0.2)]"
+                                                                                />
+                                                                                <input
+                                                                                    type="number"
+                                                                                    min={0}
+                                                                                    step="0.5"
+                                                                                    placeholder="Poids (kg)"
+                                                                                    value={set.weight}
+                                                                                    onChange={(e) => updateSetValue(s.id, exIndex, setIndex, "weight", e.target.value)}
+                                                                                    className="h-10 rounded-lg border border-black/10 bg-white px-3 text-sm outline-none transition focus:border-[#FCAB10] focus:shadow-[0_0_0_2px_rgba(252,171,16,0.2)]"
+                                                                                />
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+
+                                                    {logStatus[s.id] && (
+                                                        <p className="text-sm text-[#333]/80">{logStatus[s.id]}</p>
+                                                    )}
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => saveSessionLog(s)}
+                                                        disabled={logSaving[s.id]}
+                                                        className="inline-flex items-center justify-center rounded-xl bg-[#39393A] px-4 py-2 text-sm font-semibold text-white shadow hover:brightness-95 disabled:opacity-60"
+                                                    >
+                                                        {logSaving[s.id] ? "Enregistrement..." : "Enregistrer cette seance"}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
                             </div>
                         ))}
 

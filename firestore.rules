@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && (!('sex' in request.resource.data) || request.resource.data.sex in ['M','F','Other','T-MAX 530'])
+        && (!('heightCm' in request.resource.data) || (request.resource.data.heightCm is number && request.resource.data.heightCm > 0 && request.resource.data.heightCm < 280))
+        && (!('weightKg' in request.resource.data) || (request.resource.data.weightKg is number && request.resource.data.weightKg > 20 && request.resource.data.weightKg < 400))
+        && (!('training' in request.resource.data) || request.resource.data.training is map)
+        && (!('nutrition' in request.resource.data) || request.resource.data.nutrition is map);
+      allow delete: if false;
+
+      match /metrics/{metricId} {
+        allow read, write: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly([
+            'measuredAt','weightKg','bmi','waistCm','sleepHours','energyLevel','createdAt'
+          ])
+          && request.resource.data.weightKg is number
+          && request.resource.data.weightKg > 20 && request.resource.data.weightKg < 400
+          && request.resource.data.bmi is number
+          && request.resource.data.bmi > 10 && request.resource.data.bmi < 80
+          && (!('waistCm' in request.resource.data) || (request.resource.data.waistCm is number && request.resource.data.waistCm > 20 && request.resource.data.waistCm < 300))
+          && (!('sleepHours' in request.resource.data) || (request.resource.data.sleepHours is number && request.resource.data.sleepHours >= 0 && request.resource.data.sleepHours <= 24))
+          && (!('energyLevel' in request.resource.data) || (request.resource.data.energyLevel is number && request.resource.data.energyLevel >= 1 && request.resource.data.energyLevel <= 10));
+      }
+
+      match /goals/{goalId} { allow read, write: if isOwner(uid); }
+
+      match /foodLogs/{logDate} {
+        allow read, write: if isOwner(uid);
+        match /items/{itemId} { allow read, write: if isOwner(uid); }
+      }
+
+      match /trainingLogs/{logId} {
+        allow read, write: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly([
+            'seanceId','seanceTitle','date','volume',
+            'planType','goalCode','sessionsPerWeek','niveau','objectif',
+            'exercises','notes','createdAt'
+          ]);
+      }
+    }
+
+    match /foodCache/{foodItemId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /catalog/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
