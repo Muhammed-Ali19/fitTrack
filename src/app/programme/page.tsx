@@ -79,6 +79,14 @@ function accessoryScheme(goal: GoalCode): string {
     return goal === "CUTTING" ? "2-3x15-20 reps" : "2-3x12-15 reps";
 }
 
+const LOWER_IMAGE = "/img/lower.jpg";
+const UPPER_IMAGE = "/img/Upper.jpg";
+
+function autoImageForSession(title: string): string {
+    const normalized = title.toLowerCase();
+    return normalized.includes("lower") || normalized.includes("leg") ? LOWER_IMAGE : UPPER_IMAGE;
+}
+
 function repeatPattern(base: Seance[], count: number): Seance[] {
     const result: Seance[] = [];
     const safeCount = Math.max(2, Math.min(count, 6));
@@ -106,7 +114,7 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 objectif: goalLabel,
                 niveau: "Intermediaire",
                 duree: 55,
-                image: "/images/fullbody-a.jpg",
+                image: autoImageForSession("Full Body A"),
                 exercices: [
                     { nom: "Squat barre", repetitions: reps },
                     { nom: "Developpe couche", repetitions: reps },
@@ -121,7 +129,7 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 objectif: goalLabel,
                 niveau: "Intermediaire",
                 duree: 55,
-                image: "/images/fullbody-b.jpg",
+                image: autoImageForSession("Full Body B"),
                 exercices: [
                     { nom: "Souleve de terre jambes tendues", repetitions: reps },
                     { nom: "Developpe militaire halteres", repetitions: reps },
@@ -141,7 +149,7 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 objectif: goalLabel,
                 niveau: "Intermediaire",
                 duree: 60,
-                image: "/images/upper.jpg",
+                image: autoImageForSession("Upper"),
                 exercices: [
                     { nom: "Developpe couche ou incline", repetitions: reps },
                     { nom: "Tractions / tirage vertical", repetitions: reps },
@@ -157,7 +165,7 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 objectif: goalLabel,
                 niveau: "Intermediaire",
                 duree: 60,
-                image: "/images/lower.jpg",
+                image: autoImageForSession("Lower"),
                 exercices: [
                     { nom: "Squat ou presse", repetitions: reps },
                     { nom: "Souleve de terre jambes tendues", repetitions: reps },
@@ -179,7 +187,7 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 objectif: goalLabel,
                 niveau: "Intermediaire",
                 duree: 55,
-                image: "/images/push.jpg",
+                image: autoImageForSession("Push"),
                 exercices: [
                     { nom: "Developpe couche incline", repetitions: reps },
                     { nom: "Dips ou pompes lestees", repetitions: reps },
@@ -194,7 +202,7 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 objectif: goalLabel,
                 niveau: "Intermediaire",
                 duree: 55,
-                image: "/images/pull.jpg",
+                image: autoImageForSession("Pull"),
                 exercices: [
                     { nom: "Tractions / tirage vertical", repetitions: reps },
                     { nom: "Rowing barre", repetitions: reps },
@@ -209,7 +217,7 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 objectif: goalLabel,
                 niveau: "Intermediaire",
                 duree: 60,
-                image: "/images/legs.jpg",
+                image: autoImageForSession("Legs"),
                 exercices: [
                     { nom: "Squat ou front squat", repetitions: reps },
                     { nom: "Hip thrust", repetitions: reps },
@@ -224,7 +232,7 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
                 objectif: goalLabel,
                 niveau: "Intermediaire",
                 duree: 50,
-                image: "/images/upper2.jpg",
+                image: autoImageForSession("Upper Accessory"),
                 exercices: [
                     { nom: "Developpe halteres", repetitions: reps },
                     { nom: "Tirage poitrine prise neutre", repetitions: reps },
@@ -244,7 +252,7 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
             objectif: goalLabel,
             niveau: "Intermediaire",
             duree: 55,
-            image: "/images/push.jpg",
+            image: autoImageForSession("Push"),
             exercices: [
                 { nom: "Developpe couche", repetitions: reps },
                 { nom: "Developpe incline halteres", repetitions: reps },
@@ -259,7 +267,7 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
             objectif: goalLabel,
             niveau: "Intermediaire",
             duree: 55,
-            image: "/images/pull.jpg",
+            image: autoImageForSession("Pull"),
             exercices: [
                 { nom: "Tractions / tirage vertical", repetitions: reps },
                 { nom: "Rowing barre", repetitions: reps },
@@ -274,7 +282,7 @@ function buildProgram(ctx: { planType: TrainingPlanType; sessionsPerWeek: number
             objectif: goalLabel,
             niveau: "Intermediaire",
             duree: 60,
-            image: "/images/legs.jpg",
+            image: autoImageForSession("Legs"),
             exercices: [
                 { nom: "Squat ou presse", repetitions: reps },
                 { nom: "Souleve de terre jambes tendues", repetitions: reps },
@@ -771,7 +779,7 @@ export default function SeancesPage() {
                                 className="bg-white border border-[#FCAB10]/30 rounded-xl shadow-md overflow-hidden animate-card-pop"
                                 style={{ animationDelay: `${0.45 + index * 0.05}s` }}
                             >
-                                <div className="flex items-center gap-6 p-4">
+                                <div className="flex flex-col md:flex-row items-center gap-6 p-4">
                                     <img src={s.image} alt={s.titre} className="w-32 h-32 object-cover rounded-xl border border-[#FCAB10]/20" />
                                     <div className="flex-1">
                                         <h3 className="text-2xl font-bold text-[#39393A]">{s.titre}</h3>

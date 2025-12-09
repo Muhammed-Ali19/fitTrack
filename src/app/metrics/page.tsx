@@ -383,8 +383,7 @@ export default function MetricsPage() {
         <header className="flex flex-col gap-2 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-md shadow-black/5 backdrop-blur-sm">
           <h1 className="text-3xl font-extrabold text-[#39393A]">Journal des métriques</h1>
           <p className="text-sm text-[#333333]/80">
-            Saisis ton poids, IMC (calculé), tour de taille, sommeil et niveau d'énergie. Les
-            données sont stockées dans <code>/users/&lt;uid&gt;/metrics</code>.
+            Saisis ton poids, IMC (calculé), tour de taille, sommeil et niveau d'énergie.
           </p>
           {lastEntry && (
             <div className="flex flex-wrap gap-4 text-sm text-[#39393A]/80">
