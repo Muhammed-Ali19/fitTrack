@@ -7,6 +7,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import PatternBackground from "../components/PatternV2";
+import { Play } from "next/font/google";
 
 type TrainingPlanType = "FULL_BODY" | "UPPER_LOWER" | "SPLIT_4" | "PPL";
 type GoalCode = "MASS_GAIN" | "MUSCLE_MAINTAIN" | "CUTTING" | "GET_BACK_IN_SHAPE";
@@ -578,6 +579,7 @@ export default function SeancesPage() {
             <Nav photoUrl={profile?.photoUrl} />
             <PatternBackground />
 
+
             <main className="p-8 flex flex-col items-center pt-24 pb-16 animate-page-enter">
                 <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-md border border-black/5 mb-6 w-full max-w-6xl">
                     <h1 className="text-4xl font-bold text-[#39393A] my-6 animate-card-rise animate-delay-1">
@@ -658,13 +660,12 @@ export default function SeancesPage() {
                             {suggestionNote && <div className="text-xs text-[#333]/70">{suggestionNote}</div>}
                             {saveStatus && (
                                 <div
-                                    className={`text-xs ${
-                                        saveStatus.includes("Impossible")
-                                            ? "text-red-600"
-                                            : saveStatus.includes("enregistre")
+                                    className={`text-xs ${saveStatus.includes("Impossible")
+                                        ? "text-red-600"
+                                        : saveStatus.includes("enregistre")
                                             ? "text-green-600"
                                             : "text-[#333]/70"
-                                    }`}
+                                        }`}
                                 >
                                     {saveStatus}
                                 </div>
@@ -900,6 +901,7 @@ export default function SeancesPage() {
                                                         {logSaving[s.id] ? "Enregistrement..." : "Enregistrer cette seance"}
                                                     </button>
                                                 </div>
+
                                             );
                                         })()}
                                     </div>
@@ -914,6 +916,7 @@ export default function SeancesPage() {
                         )}
                     </section>
                 </div>
+
             </main>
 
             <Footer />
