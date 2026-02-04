@@ -259,7 +259,7 @@ export default function FitTrackHome() {
       <main className="relative z-10 mx-auto grid w-[90%] max-w-5xl place-items-center py-16 animate-page-enter">
         <div className="text-center bg-white/70 backdrop-blur-md rounded-2xl shadow-md shadow-black/10 px-6 py-4 inline-block animate-card-rise animate-delay-1">
           <h1 className="text-5xl font-extrabold tracking-tight text-[#39393A] sm:text-6xl">
-            IMC
+            Calcul IMC
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-[#333333]/90">
             Entrez votre taille et votre poids pour calculer votre IMC.
